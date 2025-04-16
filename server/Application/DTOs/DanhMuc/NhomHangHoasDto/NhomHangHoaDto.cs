@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Application.DTOs.NhomHangHoaDto
+namespace Application.DTOs.DanhMuc.NhomHangHoasDto
 {
     public class NhomHangHoaDto : BaseDto
     {

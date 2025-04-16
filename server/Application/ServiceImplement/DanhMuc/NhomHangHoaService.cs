@@ -1,4 +1,4 @@
-﻿using Application.DTOs.NhomHangHoaDto;
+﻿using Application.DTOs.DanhMuc.NhomHangHoasDto;
 using Application.Mappings;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
@@ -19,22 +19,53 @@ namespace Application.ServiceImplement.DanhMuc
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        public async Task<NhomHangHoaDto> AddAsync(NhomHangHoaDto nhomHangHoaDto)
+        public async Task<PagedList<NhomHangHoaDto>> GetAllAsync(PaginationParams paginationParams)
+        {
+            // Get paged data
+            var pagedData = await _repository.GetAllAsync(paginationParams);
+
+            // Map to DTOs using extension method
+            return pagedData.MapTo<NhomHangHoa, NhomHangHoaDto>(_mapper);
+        }
+
+        public async Task<NhomHangHoaDto> AddAsync(CreateNhomHangHoaDto createNhomHangHoaDto)
         {
             // Check if maNhom already exists
-            if (await _repository.ExistsByMaNhomAsync(nhomHangHoaDto.MaNhom))
+            if (await _repository.ExistsByMaNhomAsync(createNhomHangHoaDto.MaNhom))
             {
-                throw new Exception($"Group code '{nhomHangHoaDto.MaNhom}' already exists");
+                throw new Exception($"Group code '{createNhomHangHoaDto.MaNhom}' already exists");
             }
 
             // Map to entity
-            var entity = _mapper.Map<NhomHangHoa>(nhomHangHoaDto);
+            var entity = _mapper.Map<NhomHangHoa>(createNhomHangHoaDto);
             
             // Add to repository
             var result = await _repository.AddAsync(entity);
             
             // Map back to DTO and return
             return _mapper.Map<NhomHangHoaDto>(result);
+        }
+
+        public async Task<bool> UpdateAsync(UpdateNhomHangHoaDto updateNhomHangHoaDto)
+        {
+            // Check if exists
+            if (!await _repository.ExistsAsync(updateNhomHangHoaDto.Id))
+            {
+                throw new Exception($"Product group with ID not found: {updateNhomHangHoaDto.Id}");
+            }
+
+            // Check if the updated MaNhom already exists for a different entity
+            var existingEntity = await _repository.GetByMaNhomAsync(updateNhomHangHoaDto.MaNhom);
+            if (existingEntity != null && existingEntity.Id != updateNhomHangHoaDto.Id)
+            {
+                throw new Exception($"Group code '{updateNhomHangHoaDto.MaNhom}' is already used by another product group");
+            }
+
+            // Map to entity
+            var entity = _mapper.Map<NhomHangHoa>(updateNhomHangHoaDto);
+
+            // Update and return result
+            return await _repository.UpdateAsync(entity);
         }
 
         public async Task<bool> DeleteAsync(Guid id)
@@ -57,15 +88,6 @@ namespace Application.ServiceImplement.DanhMuc
         public async Task<bool> ExistsByMaNhomAsync(string maNhom)
         {
             return await _repository.ExistsByMaNhomAsync(maNhom);
-        }
-
-        public async Task<PagedList<NhomHangHoaDto>> GetAllAsync(PaginationParams paginationParams)
-        {
-            // Get paged data
-            var pagedData = await _repository.GetAllAsync(paginationParams);
-            
-            // Map to DTOs using extension method
-            return pagedData.MapTo<NhomHangHoa, NhomHangHoaDto>(_mapper);
         }
 
         public async Task<NhomHangHoaDto> GetByIdAsync(Guid id)
@@ -150,34 +172,12 @@ namespace Application.ServiceImplement.DanhMuc
                 PageSize = searchParams.PageSize,
                 SearchTerm = searchParams.SearchTerm
             };
-            
+
             // Get filtered data
             var pagedData = await _repository.GetFilteredAsync(specParams);
-            
+
             // Map to DTOs using extension method
             return pagedData.MapTo<NhomHangHoa, NhomHangHoaDto>(_mapper);
-        }
-
-        public async Task<bool> UpdateAsync(NhomHangHoaDto nhomHangHoaDto)
-        {
-            // Check if exists
-            if (!await _repository.ExistsAsync(nhomHangHoaDto.Id))
-            {
-                throw new Exception($"Product group with ID not found: {nhomHangHoaDto.Id}");
-            }
-            
-            // Check if the updated MaNhom already exists for a different entity
-            var existingEntity = await _repository.GetByMaNhomAsync(nhomHangHoaDto.MaNhom);
-            if (existingEntity != null && existingEntity.Id != nhomHangHoaDto.Id)
-            {
-                throw new Exception($"Group code '{nhomHangHoaDto.MaNhom}' is already used by another product group");
-            }
-
-            // Map to entity
-            var entity = _mapper.Map<NhomHangHoa>(nhomHangHoaDto);
-            
-            // Update and return result
-            return await _repository.UpdateAsync(entity);
         }
     }
 }

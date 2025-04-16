@@ -30,6 +30,7 @@ namespace server.Extensions
             services.AddScoped<ITokenService, TokenService>();
             #region Danh mục
             services.AddScoped<IHangHoaService, HangHoaService>();
+            services.AddScoped<INhomHangHoaService, NhomHangHoaService>();
 
             #endregion
 
@@ -42,6 +43,7 @@ namespace server.Extensions
             #region Repositories
 
             services.AddScoped<IHangHoaRepository, HangHoaRepository>();
+            services.AddScoped<INhomHangHoaRepository, NhomHangHoaRepository>();
 
             #endregion
 

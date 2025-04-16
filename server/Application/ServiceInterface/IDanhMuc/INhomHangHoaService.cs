@@ -1,4 +1,4 @@
-﻿using Application.DTOs.NhomHangHoaDto;
+﻿using Application.DTOs.DanhMuc.NhomHangHoasDto;
 using Core.Helpers;
 
 namespace Application.ServiceInterface.IDanhMuc
@@ -23,12 +23,12 @@ namespace Application.ServiceInterface.IDanhMuc
             /// <summary>
             /// Thêm mới một nhóm hàng hóa.
             /// </summary>
-            Task<NhomHangHoaDto> AddAsync(NhomHangHoaDto nhomHangHoaDto);
+            Task<NhomHangHoaDto> AddAsync(CreateNhomHangHoaDto createNhomHangHoaDto);
 
             /// <summary>
             /// Cập nhật thông tin một nhóm hàng hóa.
             /// </summary>
-            Task<bool> UpdateAsync(NhomHangHoaDto nhomHangHoaDto);
+            Task<bool> UpdateAsync(UpdateNhomHangHoaDto updateNhomHangHoaDto);
 
             /// <summary>
             /// Xóa một nhóm hàng hóa theo ID.

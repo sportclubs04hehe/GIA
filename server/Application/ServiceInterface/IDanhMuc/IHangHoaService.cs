@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Application.DTOs.HangHoaDto;
-using Application.DTOs.NhomHangHoaDto;
+using Application.DTOs.DanhMuc.HangHoasDto;
+using Core.Entities.Domain;
 using Core.Helpers;
 using Core.Specifications;
 
@@ -46,6 +46,11 @@ namespace Application.ServiceInterface.IDanhMuc
         /// Thêm mới hàng hóa.
         /// </summary>
         Task<HangHoaDto> AddAsync(HangHoaCreateDto createDto);
+
+        /// <summary>
+        /// Thêm mới nhiều hàng hóa.
+        /// </summary>
+        Task<(bool IsSuccess, List<HangHoaDto> Data, List<string> Errors)> CreateManyAsync(List<HangHoaCreateDto> dtos);
 
         /// <summary>
         /// Cập nhật thông tin hàng hóa.

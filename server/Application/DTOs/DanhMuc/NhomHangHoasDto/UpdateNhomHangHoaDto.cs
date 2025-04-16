@@ -4,16 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.DTOs.NhomHangHoaDto
+namespace Application.DTOs.DanhMuc.NhomHangHoasDto
 {
-    public class CreateNhomHangHoaDto
+    public class UpdateNhomHangHoaDto : BaseDto
     {
         public required string MaNhom { get; set; }
         public required string TenNhom { get; set; }
         public string? GhiChu { get; set; }
 
-        // Cho phép gán nhóm cha nếu có
+        // Cho phép cập nhật lại nhóm cha nếu cần
         public Guid? NhomChaId { get; set; }
     }
-
 }

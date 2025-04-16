@@ -1,5 +1,5 @@
-﻿using Application.DTOs.HangHoaDto;
-using Application.DTOs.NhomHangHoaDto;
+﻿using Application.DTOs.DanhMuc.HangHoasDto;
+using Application.DTOs.DanhMuc.NhomHangHoasDto;
 using Application.Resolver;
 using AutoMapper;
 using Core.Entities.Domain;

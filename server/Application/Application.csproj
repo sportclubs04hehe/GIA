@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Mappings\MappingsProfile\**" />
+    <EmbeddedResource Remove="Mappings\MappingsProfile\**" />
+    <None Remove="Mappings\MappingsProfile\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.14" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.7.0" />

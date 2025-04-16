@@ -118,6 +118,19 @@ namespace Infrastructure.Data.Repository
             return await ApplySpecification(spec).CountAsync();
         }
 
+        public override async Task<PagedList<NhomHangHoa>> GetAllAsync(PaginationParams paginationParams)
+        {
+            // Apply default ordering before pagination
+            var query = _dbSet
+                .Where(x => !x.IsDelete)
+                .OrderBy(x => x.TenNhom); 
+
+            return await PagedList<NhomHangHoa>.CreateAsync(
+                query,
+                paginationParams.PageIndex,
+                paginationParams.PageSize);
+        }
+
         // Helper methods
         private IQueryable<NhomHangHoa> ApplySpecification(ISpecification<NhomHangHoa> spec)
         {

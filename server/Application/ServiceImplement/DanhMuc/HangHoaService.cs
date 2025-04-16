@@ -1,5 +1,4 @@
-﻿using Application.DTOs.HangHoaDto;
-using Application.DTOs.NhomHangHoaDto;
+﻿using Application.DTOs.DanhMuc.HangHoasDto;
 using Application.Mappings;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
@@ -25,6 +24,34 @@ namespace Application.ServiceImplement.DanhMuc
             var hangHoa = _mapper.Map<HangHoa>(hangHoaDto);
             var result = await _hangHoaRepository.AddAsync(hangHoa);
             return _mapper.Map<HangHoaDto>(result);
+        }
+
+        public async Task<(bool IsSuccess, List<HangHoaDto> Data, List<string> Errors)> CreateManyAsync(List<HangHoaCreateDto> dtos)
+        {
+            var errors = new List<string>();
+            var validEntities = new List<HangHoa>();
+
+            foreach (var dto in dtos)
+            {
+                var validation = await ValidateCreateHangHoaAsync(dto);
+                if (!validation.IsValid)
+                {
+                    errors.Add($"[{dto.MaMatHang}] - {validation.ErrorMessage}");
+                    continue;
+                }
+
+                var entity = _mapper.Map<HangHoa>(dto);
+                validEntities.Add(entity);
+            }
+
+            if (validEntities.Any())
+            {
+                var savedEntities = await _hangHoaRepository.AddRangeAsync(validEntities);
+                var data = _mapper.Map<List<HangHoaDto>>(savedEntities);
+                return (errors.Count == 0, data, errors);
+            }
+
+            return (false, new List<HangHoaDto>(), errors);
         }
 
         public async Task<int> CountAsync()
@@ -126,7 +153,7 @@ namespace Application.ServiceImplement.DanhMuc
             return (true, string.Empty);
         }
 
-         public async Task<(bool IsValid, string ErrorMessage)> ValidateCreateHangHoaAsync(HangHoaCreateDto createDto)
+        public async Task<(bool IsValid, string ErrorMessage)> ValidateCreateHangHoaAsync(HangHoaCreateDto createDto)
         {
             // Map createDto to HangHoaDto for common validation
             var hangHoaDto = _mapper.Map<HangHoaDto>(createDto);

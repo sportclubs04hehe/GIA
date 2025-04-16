@@ -1,5 +1,4 @@
-﻿using Application.DTOs.HangHoaDto;
-using Application.DTOs.NhomHangHoaDto;
+﻿using Application.DTOs.DanhMuc.HangHoasDto;
 using Application.ServiceInterface.IDanhMuc;
 using Core.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -212,6 +211,51 @@ namespace server.Controllers.DanhMuc
             {
                 _logger.LogError(ex, "Error adding new product: {Product}", createDto);
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while adding the product");
+            }
+        }
+
+
+        /// <summary>
+        /// Thêm nhiều hàng hóa cùng lúc
+        /// </summary>
+        [HttpPost("batch")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> CreateMany([FromBody] List<HangHoaCreateDto> createDtos)
+        {
+            if (createDtos == null || !createDtos.Any())
+                return BadRequest("Item list cannot be empty.");
+
+            try
+            {
+                var (isSuccess, data, errors) = await _hangHoaService.CreateManyAsync(createDtos);
+
+                if (!isSuccess)
+                {
+                    _logger.LogWarning("Batch create failed. {Count} invalid items.", errors.Count);
+                    return BadRequest(new
+                    {
+                        Message = "Some items are not valid.",
+                        Errors = errors,
+                        Inserted = data
+                    });
+                }
+
+                _logger.LogInformation("Batch create successful. Total items: {Count}", data.Count);
+
+                // Nếu muốn trả về Created, có thể dùng CreatedAtAction với URL tham chiếu
+                return Created("api/hanghoa/batch", data);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(ex, "Invalid argument when batch creating products");
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating multiple items");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while adding the item list.");
             }
         }
 

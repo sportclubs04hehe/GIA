@@ -26,6 +26,20 @@ namespace Infrastructure.Data.Generic
             return entity;
         }
 
+        public virtual async Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities)
+        {
+            var utcNow = DateTime.UtcNow;
+            foreach (var entity in entities)
+            {
+                entity.IsDelete = false;
+                entity.CreatedDate = utcNow;
+                _dbSet.Add(entity);
+            }
+
+            await _context.SaveChangesAsync();
+            return entities;
+        }
+
         public virtual async Task<bool> UpdateAsync(T entity)
         {
             var trackedEntity = await _dbSet.FindAsync(entity.Id);

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 
-namespace Application.DTOs.NhomHangHoaDto
+namespace Application.DTOs.DanhMuc.HangHoasDto
 {
     public class HangHoaCreateDto : BaseDto
     {
