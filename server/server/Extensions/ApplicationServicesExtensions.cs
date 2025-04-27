@@ -73,9 +73,14 @@ namespace server.Extensions
             {
                 opt.AddPolicy("CorsPolicy", policy =>
                 {
-                    policy.AllowAnyHeader()
+                    policy.WithOrigins(config["Token:Audience"] ?? string.Empty)
+                          .AllowAnyHeader()
                           .AllowAnyMethod()
-                          .WithOrigins("http://localhost:4200");
+                          .AllowCredentials()
+                          // expose header Pagination để frontend có thể đọc
+                          .WithExposedHeaders("Pagination")
+                          // nếu muốn, bạn có thể liệt kê thêm các header tuỳ chỉnh khác ở đây
+                          ;
                 });
             });
 

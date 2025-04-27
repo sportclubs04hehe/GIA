@@ -11,7 +11,7 @@ namespace Core.Entities.Domain
         public string? GhiChu { get; set; }
         public DateTime NgayHieuLuc { get; set; }
         public DateTime NgayHetHieuLuc { get; set; }
-        public Guid? NhomHangHoaId { get; set; }
+        public Guid? NhomHangHoaId { get; set; } = null!;
         public virtual NhomHangHoa? NhomHangHoa { get; set; }
     }
 }

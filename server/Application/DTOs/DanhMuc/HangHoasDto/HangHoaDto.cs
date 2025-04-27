@@ -30,6 +30,6 @@ namespace Application.DTOs.DanhMuc.HangHoasDto
         [DataType(DataType.Date)]
         public DateTime NgayHetHieuLuc { get; set; }
 
-        public Guid NhomHangHoaId { get; set; }
+        public Guid? NhomHangHoaId { get; set; }
     }
 }

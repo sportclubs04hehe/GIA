@@ -10,6 +10,12 @@ namespace server
         {
             Console.OutputEncoding = Encoding.UTF8;
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.ListenLocalhost(7019);
+            });
+
             builder.Services.AddApplicationServices(builder.Configuration);
             builder.Services.AddIdentityServices(builder.Configuration);
 
@@ -26,8 +32,13 @@ namespace server
             {
                 // Development-specific middleware can be added here if needed
             }
+            app.UseRouting();
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
+
+            app.UseCors("CorsPolicy");
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 

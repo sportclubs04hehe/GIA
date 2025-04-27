@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Application.DTOs.DanhMuc.HangHoasDto
 {
@@ -26,6 +21,6 @@ namespace Application.DTOs.DanhMuc.HangHoasDto
         [Required]
         public DateTime NgayHetHieuLuc { get; set; }
         
-        public Guid? NhomHangHoaId { get; set; }
+        public Guid? NhomHangHoaId { get; set; } = null!;
     }
 }

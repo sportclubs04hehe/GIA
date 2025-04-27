@@ -177,7 +177,7 @@ namespace server.Controllers.DanhMuc
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while retrieving active products");
             }
         }
-
+         
         /// <summary>
         /// Thêm mới hàng hóa
         /// </summary>
@@ -185,7 +185,7 @@ namespace server.Controllers.DanhMuc
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<HangHoaDto>> Add([FromBody] HangHoaCreateDto createDto)
+        public async Task<IActionResult> Add([FromBody] HangHoaCreateDto createDto)
         {
             if (createDto == null)
                 return BadRequest("Request body cannot be empty");
@@ -194,22 +194,20 @@ namespace server.Controllers.DanhMuc
             {
                 // Validate input
                 var validation = await _hangHoaService.ValidateCreateHangHoaAsync(createDto);
+
                 if (!validation.IsValid)
-                    return BadRequest(validation.ErrorMessage);
+                    return BadRequest(new { message = validation.ErrorMessage });
 
                 var result = await _hangHoaService.AddAsync(createDto);
 
-                _logger.LogInformation("Product created successfully: {ProductId}", result.Id);
                 return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
             }
             catch (ArgumentException ex)
             {
-                _logger.LogError(ex, "Invalid argument when adding product: {Product}", createDto);
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding new product: {Product}", createDto);
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while adding the product");
             }
         }
