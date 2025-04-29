@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Application.DTOs.DanhMuc.HangHoasDto;
-using Core.Entities.Domain;
+﻿using Application.DTOs.DanhMuc.HangHoasDto;
 using Core.Helpers;
-using Core.Specifications;
 
 namespace Application.ServiceInterface.IDanhMuc
 {
@@ -55,7 +48,7 @@ namespace Application.ServiceInterface.IDanhMuc
         /// <summary>
         /// Cập nhật thông tin hàng hóa.
         /// </summary>
-        Task<bool> UpdateAsync(HangHoaUpdateDto updateDto);
+        Task<(bool IsSuccess, string ErrorMessage)> UpdateAsync(HangHoaUpdateDto updateDto);
 
         /// <summary>
         /// Xóa hàng hóa theo ID.
@@ -70,7 +63,7 @@ namespace Application.ServiceInterface.IDanhMuc
         /// <summary>
         /// Kiểm tra sự tồn tại của hàng hóa theo mã mặt hàng.
         /// </summary>
-        Task<bool> ExistsByMaMatHangAsync(string maMatHang);
+        Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId);
 
         /// <summary>
         /// Kiểm tra tính hợp lệ của hàng hóa trước khi thêm mới hoặc cập nhật.

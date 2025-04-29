@@ -35,7 +35,7 @@ namespace server.Controllers.QuanTriHeThong
             var user = await _userManager.FindByEmailFromClaimsPrincipal(User);
 
             if (user == null)
-                return Unauthorized(ApiResponse.Unauthorized("User not found"));
+                return Unauthorized("User not found");
 
             return Ok(CreateUserDto(user));
         }
@@ -55,12 +55,12 @@ namespace server.Controllers.QuanTriHeThong
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
 
             if (user == null)
-                return Unauthorized(ApiResponse.Unauthorized("Invalid email or password"));
+                return Unauthorized("Invalid email or password");
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
 
             if (!result.Succeeded)
-                return Unauthorized(ApiResponse.Unauthorized("Invalid email or password"));
+                return Unauthorized("Invalid email or password");
 
             return Ok(CreateUserDto(user));
         }

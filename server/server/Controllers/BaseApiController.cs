@@ -10,7 +10,8 @@ namespace server.Controllers
     [ApiController]
     public class BaseApiController : ControllerBase
     {
-        
+        public readonly static string THONGBAO = "Thông báo";
+
         /// <summary>
         /// Executes an async operation that returns a paged list and applies pagination header
         /// </summary>

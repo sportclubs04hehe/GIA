@@ -14,7 +14,8 @@ namespace Core.Interfaces.IRepository
         Task<PagedList<HangHoa>> GetActiveHangHoaAsync(PaginationParams paginationParams);
         Task<PagedList<HangHoa>> GetByNhomHangHoaAsync(Guid nhomHangHoaId, PaginationParams paginationParams);
         Task<PagedList<HangHoa>> GetWithFilterAsync(SpecificationParams specParams);
-        Task<bool> ExistsByMaMatHangAsync(string maMatHang);
+        Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId);
         Task<int> CountAsync();
+        IQueryable<HangHoa> SearchQuery(SearchParams p);
     }
 }

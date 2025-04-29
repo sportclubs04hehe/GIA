@@ -2,9 +2,11 @@
 using Application.Mappings;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Core.Entities.Domain;
 using Core.Helpers;
 using Core.Interfaces.IRepository;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.ServiceImplement.DanhMuc
 {
@@ -69,9 +71,9 @@ namespace Application.ServiceImplement.DanhMuc
             return await _hangHoaRepository.ExistsAsync(id);
         }
 
-        public async Task<bool> ExistsByMaMatHangAsync(string maMatHang)
+        public async Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId)
         {
-            return await _hangHoaRepository.ExistsByMaMatHangAsync(maMatHang);
+            return await _hangHoaRepository.ExistsByMaMatHangAsync(maMatHang, excludeId);
         }
 
         public async Task<PagedList<HangHoaDto>> GetActiveHangHoaAsync(PaginationParams paginationParams)
@@ -110,43 +112,42 @@ namespace Application.ServiceImplement.DanhMuc
             return hangHoas.MapTo<HangHoa, HangHoaDto>(_mapper);
         }
 
-        public async Task<PagedList<HangHoaDto>> SearchAsync(SearchParams searchParams)
+        public async Task<PagedList<HangHoaDto>> SearchAsync(SearchParams p)
         {
-            var hangHoas = await _hangHoaRepository.SearchAsync(searchParams);
-            return hangHoas.MapTo<HangHoa, HangHoaDto>(_mapper);
-        }
+            var query = _hangHoaRepository.SearchQuery(p);
 
-        public async Task<bool> UpdateAsync(HangHoaDto hangHoaDto)
-        {
-            var hangHoa = _mapper.Map<HangHoa>(hangHoaDto);
-            return await _hangHoaRepository.UpdateAsync(hangHoa);
+            var dtoQuery = query
+                .ProjectTo<HangHoaDto>(_mapper.ConfigurationProvider)
+                .AsNoTracking();
+
+            return await PagedList<HangHoaDto>.CreateAsync(
+                dtoQuery,
+                p.PageIndex,
+                p.PageSize
+            );
         }
 
         public async Task<(bool IsValid, string ErrorMessage)> ValidateHangHoaAsync(HangHoaDto hangHoaDto, bool isUpdate = false)
         {
-            // Check required fields
             if (string.IsNullOrWhiteSpace(hangHoaDto.MaMatHang))
-                return (false, "MaMatHang cannot be blank");
+                return (false, "Mã mặt hàng không được để trống");
                 
             if (string.IsNullOrWhiteSpace(hangHoaDto.TenMatHang))
                 return (false, "TenMatHang cannot be blank");
 
-            // Check if MaMatHang already exists (for new records)
             if (!isUpdate)
             {
-                var exists = await ExistsByMaMatHangAsync(hangHoaDto.MaMatHang);
+                var exists = await ExistsByMaMatHangAsync(hangHoaDto.MaMatHang, hangHoaDto.Id);
                 if (exists)
-                    return (false, $"MaMatHang'{hangHoaDto.MaMatHang}' already exists");
+                    return (false, $"Mã mặt hàng {hangHoaDto.MaMatHang} đã tồn tại");
             }
             else
             {
-                // For updates, check if the code exists but belongs to a different record
                 var existingHangHoa = await GetByMaMatHangAsync(hangHoaDto.MaMatHang);
                 if (existingHangHoa != null && existingHangHoa.Id != hangHoaDto.Id)
-                    return (false, $"MaMatHang'{hangHoaDto.MaMatHang}' has been used by another item");
+                    return (false, $"Mã mặt hàng {hangHoaDto.MaMatHang} đã tồn tại");
             }
 
-            // Check if dates are valid
             if (hangHoaDto.NgayHieuLuc > hangHoaDto.NgayHetHieuLuc)
                 return (false, "NgayHieuLuc cannot be after NgayHetHieuLuc");
 
@@ -161,15 +162,7 @@ namespace Application.ServiceImplement.DanhMuc
             // Use the existing validation method with isUpdate=false
             return await ValidateHangHoaAsync(hangHoaDto, false);
         }
-        
-        public async Task<(bool IsValid, string ErrorMessage)> ValidateUpdateHangHoaAsync(HangHoaUpdateDto updateDto)
-        {
-            // Map updateDto to HangHoaDto for common validation
-            var hangHoaDto = _mapper.Map<HangHoaDto>(updateDto);
-            
-            // Use the existing validation method with isUpdate=true
-            return await ValidateHangHoaAsync(hangHoaDto, true);
-        }
+
 
         public async Task<HangHoaDto> AddAsync(HangHoaCreateDto createDto)
         {
@@ -178,10 +171,32 @@ namespace Application.ServiceImplement.DanhMuc
             return _mapper.Map<HangHoaDto>(result);
         }
 
-        public async Task<bool> UpdateAsync(HangHoaUpdateDto updateDto)
+        public async Task<(bool IsValid, string ErrorMessage)> ValidateUpdateHangHoaAsync(HangHoaUpdateDto updateDto)
         {
-            var hangHoa = _mapper.Map<HangHoa>(updateDto);
-            return await _hangHoaRepository.UpdateAsync(hangHoa);
+            var hangHoaDto = _mapper.Map<HangHoaDto>(updateDto);
+            return await ValidateHangHoaAsync(hangHoaDto, true);
         }
+
+
+        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateAsync(HangHoaUpdateDto updateDto)
+        {
+            var (isValid, errorMessage) = await ValidateUpdateHangHoaAsync(updateDto);
+
+            if (!isValid)
+            {
+                return (false, errorMessage);
+            }
+
+            var hangHoa = _mapper.Map<HangHoa>(updateDto);
+            var success = await _hangHoaRepository.UpdateAsync(hangHoa);
+
+            if (!success)
+            {
+                return (false, string.Empty);
+            }
+
+            return (true, string.Empty);
+        }
+
     }
 }

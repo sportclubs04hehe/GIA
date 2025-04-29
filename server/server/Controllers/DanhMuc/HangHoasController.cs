@@ -2,6 +2,7 @@
 using Application.ServiceInterface.IDanhMuc;
 using Core.Helpers;
 using Microsoft.AspNetCore.Mvc;
+using server.Errors;
 using server.Helpers;
 
 namespace server.Controllers.DanhMuc
@@ -177,7 +178,7 @@ namespace server.Controllers.DanhMuc
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while retrieving active products");
             }
         }
-         
+
         /// <summary>
         /// Thêm mới hàng hóa
         /// </summary>
@@ -217,13 +218,13 @@ namespace server.Controllers.DanhMuc
         /// Thêm nhiều hàng hóa cùng lúc
         /// </summary>
         [HttpPost("batch")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<HangHoaDto>>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateMany([FromBody] List<HangHoaCreateDto> createDtos)
         {
             if (createDtos == null || !createDtos.Any())
-                return BadRequest("Item list cannot be empty.");
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Danh sách mặt hàng không được để trống"));
 
             try
             {
@@ -231,58 +232,76 @@ namespace server.Controllers.DanhMuc
 
                 if (!isSuccess)
                 {
-                    _logger.LogWarning("Batch create failed. {Count} invalid items.", errors.Count);
-                    return BadRequest(new
-                    {
-                        Message = "Some items are not valid.",
-                        Errors = errors,
-                        Inserted = data
-                    });
+                    return BadRequest(
+                        ApiResponse<IEnumerable<HangHoaDto>>
+                           .BadRequest(
+                               title: THONGBAO,
+                               message: "Có một số mục không hợp lệ, vui lòng kiểm tra chi tiết bên dưới",
+                               errors: new
+                               {
+                                   InvalidItems = errors,
+                                   Inserted = data
+                               }
+                           )
+                    );
                 }
 
                 _logger.LogInformation("Batch create successful. Total items: {Count}", data.Count);
-
-                // Nếu muốn trả về Created, có thể dùng CreatedAtAction với URL tham chiếu
-                return Created("api/hanghoa/batch", data);
+                return Created(
+                    uri: Url.Action(nameof(CreateMany), "HangHoas"),
+                    value: ApiResponse<IEnumerable<HangHoaDto>>.Created(
+                        data,
+                        title: "Batch create successful",
+                        message: $"{data.Count()} mặt hàng đã được thêm thành công"
+                    )
+                );
             }
             catch (ArgumentException ex)
             {
                 _logger.LogError(ex, "Invalid argument when batch creating products");
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating multiple items");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while adding the item list.");
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError("Server error", "Đã có lỗi xảy ra khi thêm nhiều mặt hàng")
+                );
             }
         }
 
+
         /// <summary>
-        /// Cập nhật thông tin hàng hóa
+        /// Cập nhật thông tin hàng hóa, trả về DTO bản ghi đã được sửa
         /// </summary>
-        [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("{id:guid}")]
+        [ProducesResponseType(typeof(HangHoaDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Update(Guid id, [FromBody] HangHoaUpdateDto updateDto)
         {
             if (updateDto == null)
-                return BadRequest("Request body cannot be empty");
+                return BadRequest(ApiResponse.BadRequest("Invalid payload"));
 
-            // Set the ID from the route parameter
             updateDto.Id = id;
+            var (isSuccess, errorMessage) = await _hangHoaService.UpdateAsync(updateDto);
 
-            return await ExecuteValidatedUpdateAsync(
-                id: id,
-                updateDto: updateDto,
-                existsCheck: () => _hangHoaService.ExistsAsync(id),
-                validator: () => _hangHoaService.ValidateUpdateHangHoaAsync(updateDto),
-                updateOperation: () => _hangHoaService.UpdateAsync(updateDto),
-                notFoundMessage: $"Product with ID {id} not found",
-                successMessage: $"Product updated successfully: {id}",
-                failureMessage: "Failed to update the product"
-            );
+            if (!isSuccess)
+            {
+                if (!string.IsNullOrEmpty(errorMessage))
+                    return BadRequest(ApiResponse.BadRequest(THONGBAO, errorMessage));
+
+                return NotFound(ApiResponse.NotFound(THONGBAO, $"Mặt hàng này không tồn tại"));
+            }
+
+            var dto = await _hangHoaService.GetByIdAsync(id);
+            if (dto == null)
+                return NotFound(ApiResponse.NotFound(THONGBAO, $"Không tim thấy sản phẩm sau khi cập nhật   "));
+
+            // On success, return the updated DTO directly
+            return Ok(dto);
         }
 
         /// <summary>
@@ -333,14 +352,14 @@ namespace server.Controllers.DanhMuc
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<bool>> ExistsByMaMatHang(string maMatHang)
+        public async Task<ActionResult<bool>> ExistsByMaMatHang(string maMatHang, Guid excludeId)
         {
             if (string.IsNullOrEmpty(maMatHang))
                 return BadRequest("Product code cannot be empty");
 
             try
             {
-                var exists = await _hangHoaService.ExistsByMaMatHangAsync(maMatHang);
+                var exists = await _hangHoaService.ExistsByMaMatHangAsync(maMatHang, excludeId);
                 return Ok(exists);
             }
             catch (Exception ex)
