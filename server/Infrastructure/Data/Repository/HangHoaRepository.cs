@@ -1,25 +1,25 @@
-﻿using Core.Entities.Domain;
+﻿using Core.Entities.Domain.DanhMuc;
 using Core.Helpers;
-using Core.Interfaces.IRepository;
+using Core.Interfaces.IRepository.IDanhMuc;
 using Infrastructure.Data.Generic;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data.Repository
 {
-    public class HangHoaRepository : GenericRepository<HangHoa>, IHangHoaRepository
+    public class HangHoaRepository : GenericRepository<Dm_HangHoa>, IHangHoaRepository
     {
         public HangHoaRepository(StoreContext context) : base(context)
         {
         }
 
-        public async Task<HangHoa> GetByMaMatHangAsync(string maMatHang)
+        public async Task<Dm_HangHoa> GetByMaMatHangAsync(string maMatHang)
         {
             return await _dbSet
                 .Include(h => h.NhomHangHoa)
                 .FirstOrDefaultAsync(h => h.MaMatHang == maMatHang && !h.IsDelete);
         }
 
-        public async Task<PagedList<HangHoa>> GetActiveHangHoaAsync(PaginationParams paginationParams)
+        public async Task<PagedList<Dm_HangHoa>> GetActiveHangHoaAsync(PaginationParams paginationParams)
         {
             var query = _dbSet
                 .AsNoTracking()
@@ -29,13 +29,13 @@ namespace Infrastructure.Data.Repository
                 .Include(h => h.NhomHangHoa)
                 .OrderBy(h => h.TenMatHang);
 
-            return await PagedList<HangHoa>.CreateAsync(
+            return await PagedList<Dm_HangHoa>.CreateAsync(
                 query,
                 paginationParams.PageIndex,
                 paginationParams.PageSize);
         }
 
-        public async Task<PagedList<HangHoa>> GetAllAsync(PaginationParams paginationParams)
+        public async Task<PagedList<Dm_HangHoa>> GetAllAsync(PaginationParams paginationParams)
         {
             var query = _dbSet
                 .AsNoTracking()
@@ -43,13 +43,13 @@ namespace Infrastructure.Data.Repository
                 .Include(h => h.NhomHangHoa)
                 .OrderBy(h => h.TenMatHang);
 
-            return await PagedList<HangHoa>.CreateAsync(
+            return await PagedList<Dm_HangHoa>.CreateAsync(
                 query,
                 paginationParams.PageIndex,
                 paginationParams.PageSize);
         }
 
-        public async Task<PagedList<HangHoa>> GetByNhomHangHoaAsync(Guid nhomHangHoaId, PaginationParams paginationParams)
+        public async Task<PagedList<Dm_HangHoa>> GetByNhomHangHoaAsync(Guid nhomHangHoaId, PaginationParams paginationParams)
         {
             var query = _dbSet
                 .AsNoTracking()
@@ -57,13 +57,13 @@ namespace Infrastructure.Data.Repository
                 .Include(h => h.NhomHangHoa)
                 .OrderBy(h => h.TenMatHang);
 
-            return await PagedList<HangHoa>.CreateAsync(
+            return await PagedList<Dm_HangHoa>.CreateAsync(
                 query,
                 paginationParams.PageIndex,
                 paginationParams.PageSize);
         }
 
-        public async Task<PagedList<HangHoa>> GetWithFilterAsync(SpecificationParams specParams)
+        public async Task<PagedList<Dm_HangHoa>> GetWithFilterAsync(SpecificationParams specParams)
         {
             var query = _dbSet
                 .Where(h => !h.IsDelete)
@@ -101,13 +101,13 @@ namespace Infrastructure.Data.Repository
                 query = query.OrderBy(h => h.TenMatHang);
             }
 
-            return await PagedList<HangHoa>.CreateAsync(
+            return await PagedList<Dm_HangHoa>.CreateAsync(
                 query,
                 specParams.PageIndex,
                 specParams.PageSize);
         }
 
-        public IQueryable<HangHoa> SearchQuery(SearchParams p)
+        public IQueryable<Dm_HangHoa> SearchQuery(SearchParams p)
         {
             var searchTerm = p.SearchTerm?.Trim().ToLower();
             // Tạo pattern LIKE
@@ -123,12 +123,11 @@ namespace Infrastructure.Data.Repository
                 .OrderBy(h => h.TenMatHang);
         }
 
-        public async Task<int> CountAsync()
-        {
-            return await _dbSet
-                .Where(h => !h.IsDelete)
-                .CountAsync();
-        }
+        public Task<int> CountAsync()
+        => _dbSet
+           .AsNoTracking()                     
+           .CountAsync(h => !h.IsDelete);      
+
 
         public async Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId)
         {

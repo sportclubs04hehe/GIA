@@ -1,11 +1,10 @@
 ﻿using Core.Entities.IdentityBase;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Core.Entities.Domain
+namespace Core.Entities.Domain.DanhMuc
 {
     [Table("NhomHangHoa")]
-    public class NhomHangHoa : BaseIdentity
+    public class Dm_NhomHangHoa : BaseIdentity
     {
         public required string MaNhom { get; set; }
         public required string TenNhom { get; set; }
@@ -15,12 +14,12 @@ namespace Core.Entities.Domain
         public Guid? NhomChaId { get; set; }
 
         [ForeignKey("NhomChaId")]
-        public virtual NhomHangHoa NhomCha { get; set; }
+        public virtual Dm_NhomHangHoa NhomCha { get; set; }
 
         // 🔁 Các nhóm con trực tiếp
-        public virtual ICollection<NhomHangHoa> NhomCon { get; set; }
+        public virtual ICollection<Dm_NhomHangHoa> NhomCon { get; set; }
 
         // 🔗 Hàng hóa trong nhóm
-        public virtual ICollection<HangHoa> HangHoas { get; set; }
+        public virtual ICollection<Dm_HangHoa> HangHoas { get; set; }
     }
 }

@@ -2,12 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Core.Interfaces.IGeneric
 {
-    public interface IRepository<T> where T : class
+    public interface IGenericRepository<T> where T : class
     {
         Task<T> AddAsync(T entity);
         Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities);
@@ -16,6 +17,8 @@ namespace Core.Interfaces.IGeneric
         Task<T> GetByIdAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
         Task<PagedList<T>> GetAllAsync(PaginationParams paginationParams);
-        Task<PagedList<T>> SearchAsync(SearchParams searchParams);
+        Task<PagedList<T>> SearchAsync(
+            SearchParams searchParams,
+            params Expression<Func<T, string>>[] searchFields);
     }
 }

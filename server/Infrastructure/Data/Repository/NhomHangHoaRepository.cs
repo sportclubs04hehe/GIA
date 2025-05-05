@@ -1,13 +1,13 @@
-﻿using Core.Entities.Domain;
+﻿using Core.Entities.Domain.DanhMuc;
 using Core.Helpers;
-using Core.Interfaces.IRepository;
+using Core.Interfaces.IRepository.IDanhMuc;
 using Core.Specifications;
 using Infrastructure.Data.Generic;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data.Repository
 {
-    public class NhomHangHoaRepository : GenericRepository<NhomHangHoa>, INhomHangHoaRepository
+    public class NhomHangHoaRepository : GenericRepository<Dm_NhomHangHoa>, INhomHangHoaRepository
     {
         public NhomHangHoaRepository(StoreContext context) : base(context)
         {
@@ -15,7 +15,7 @@ namespace Infrastructure.Data.Repository
         }
 
         // Only implementing methods not in the base class
-        public async Task<NhomHangHoa?> GetByMaNhomAsync(string maNhom)
+        public async Task<Dm_NhomHangHoa?> GetByMaNhomAsync(string maNhom)
         {
             return await _dbSet
                 .FirstOrDefaultAsync(x => x.MaNhom == maNhom && !x.IsDelete);
@@ -26,7 +26,7 @@ namespace Infrastructure.Data.Repository
             return await _dbSet.AnyAsync(x => x.MaNhom == maNhom && !x.IsDelete);
         }
 
-        public async Task<IReadOnlyList<NhomHangHoa>> GetRootGroupsAsync()
+        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetRootGroupsAsync()
         {
             return await _dbSet
                 .Where(x => !x.IsDelete && x.NhomChaId == null)
@@ -34,7 +34,7 @@ namespace Infrastructure.Data.Repository
                 .ToListAsync();
         }
 
-        public async Task<IReadOnlyList<NhomHangHoa>> GetChildGroupsAsync(Guid parentId)
+        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetChildGroupsAsync(Guid parentId)
         {
             return await _dbSet
                 .Where(x => !x.IsDelete && x.NhomChaId == parentId)
@@ -42,7 +42,7 @@ namespace Infrastructure.Data.Repository
                 .ToListAsync();
         }
 
-        public async Task<PagedList<NhomHangHoa>> GetFilteredAsync(SpecificationParams specParams)
+        public async Task<PagedList<Dm_NhomHangHoa>> GetFilteredAsync(SpecificationParams specParams)
         {
             var query = _dbSet
                 .Where(x => !x.IsDelete)
@@ -68,13 +68,13 @@ namespace Infrastructure.Data.Repository
                 query = query.OrderBy(x => x.TenNhom);
             }
 
-            return await PagedList<NhomHangHoa>.CreateAsync(
+            return await PagedList<Dm_NhomHangHoa>.CreateAsync(
                 query, 
                 specParams.PageIndex, 
                 specParams.PageSize);
         }
 
-        public async Task<NhomHangHoa> GetWithChildrenAsync(Guid id, int levels = 1)
+        public async Task<Dm_NhomHangHoa> GetWithChildrenAsync(Guid id, int levels = 1)
         {
             var query = _dbSet
                 .Where(x => x.Id == id && !x.IsDelete)
@@ -89,7 +89,7 @@ namespace Infrastructure.Data.Repository
             return await query.FirstOrDefaultAsync();
         }
 
-        public async Task<NhomHangHoa> GetWithProductsAsync(Guid id)
+        public async Task<Dm_NhomHangHoa> GetWithProductsAsync(Guid id)
         {
             return await _dbSet
                 .Where(x => x.Id == id && !x.IsDelete)
@@ -97,42 +97,42 @@ namespace Infrastructure.Data.Repository
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<NhomHangHoa> GetSingleBySpecAsync(ISpecification<NhomHangHoa> spec)
+        public async Task<Dm_NhomHangHoa> GetSingleBySpecAsync(ISpecification<Dm_NhomHangHoa> spec)
         {
             return await ApplySpecification(spec).FirstOrDefaultAsync();
         }
 
-        public async Task<IReadOnlyList<NhomHangHoa>> GetListBySpecAsync(ISpecification<NhomHangHoa> spec)
+        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetListBySpecAsync(ISpecification<Dm_NhomHangHoa> spec)
         {
             return await ApplySpecification(spec).ToListAsync();
         }
 
-        public async Task<PagedList<NhomHangHoa>> GetPagedBySpecAsync(ISpecification<NhomHangHoa> spec, PaginationParams paginationParams)
+        public async Task<PagedList<Dm_NhomHangHoa>> GetPagedBySpecAsync(ISpecification<Dm_NhomHangHoa> spec, PaginationParams paginationParams)
         {
             var query = ApplySpecification(spec);
-            return await PagedList<NhomHangHoa>.CreateAsync(query, paginationParams.PageIndex, paginationParams.PageSize);
+            return await PagedList<Dm_NhomHangHoa>.CreateAsync(query, paginationParams.PageIndex, paginationParams.PageSize);
         }
 
-        public async Task<int> CountAsync(ISpecification<NhomHangHoa> spec)
+        public async Task<int> CountAsync(ISpecification<Dm_NhomHangHoa> spec)
         {
             return await ApplySpecification(spec).CountAsync();
         }
 
-        public override async Task<PagedList<NhomHangHoa>> GetAllAsync(PaginationParams paginationParams)
+        public override async Task<PagedList<Dm_NhomHangHoa>> GetAllAsync(PaginationParams paginationParams)
         {
             // Apply default ordering before pagination
             var query = _dbSet
                 .Where(x => !x.IsDelete)
                 .OrderBy(x => x.TenNhom); 
 
-            return await PagedList<NhomHangHoa>.CreateAsync(
+            return await PagedList<Dm_NhomHangHoa>.CreateAsync(
                 query,
                 paginationParams.PageIndex,
                 paginationParams.PageSize);
         }
 
         // Helper methods
-        private IQueryable<NhomHangHoa> ApplySpecification(ISpecification<NhomHangHoa> spec)
+        private IQueryable<Dm_NhomHangHoa> ApplySpecification(ISpecification<Dm_NhomHangHoa> spec)
         {
             var query = _dbSet.Where(x => !x.IsDelete).AsQueryable();
             
@@ -164,7 +164,7 @@ namespace Infrastructure.Data.Repository
             return query;
         }
 
-        private IQueryable<NhomHangHoa> IncludeChildrenLevel(IQueryable<NhomHangHoa> query, int level)
+        private IQueryable<Dm_NhomHangHoa> IncludeChildrenLevel(IQueryable<Dm_NhomHangHoa> query, int level)
         {
             if (level == 0)
             {
@@ -180,7 +180,7 @@ namespace Infrastructure.Data.Repository
             return query.Include(includePath);
         }
 
-        private IQueryable<NhomHangHoa> ApplySorting(IQueryable<NhomHangHoa> query, string sortBy, bool isDescending)
+        private IQueryable<Dm_NhomHangHoa> ApplySorting(IQueryable<Dm_NhomHangHoa> query, string sortBy, bool isDescending)
         {
             return sortBy.ToLower() switch
             {

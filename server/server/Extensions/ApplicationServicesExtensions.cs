@@ -2,7 +2,7 @@
 using Application.ServiceImplement.DanhMuc;
 using Application.ServiceImplement.SSO;
 using Application.ServiceInterface.IDanhMuc;
-using Core.Interfaces.IRepository;
+using Core.Interfaces.IRepository.IDanhMuc;
 using Core.ServiceInterface.ISSO;
 using Infrastructure.Data;
 using Infrastructure.Data.Repository;
@@ -31,6 +31,7 @@ namespace server.Extensions
             #region Danh mục
             services.AddScoped<IHangHoaService, HangHoaService>();
             services.AddScoped<INhomHangHoaService, NhomHangHoaService>();
+            services.AddScoped<IDonViTinhService, DonViTinhService>();
 
             #endregion
 
@@ -44,6 +45,7 @@ namespace server.Extensions
 
             services.AddScoped<IHangHoaRepository, HangHoaRepository>();
             services.AddScoped<INhomHangHoaRepository, NhomHangHoaRepository>();
+            services.AddScoped<IDonViTinhRepository, DonViTinhRepository>();
 
             #endregion
 
@@ -77,9 +79,7 @@ namespace server.Extensions
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials()
-                          // expose header Pagination để frontend có thể đọc
                           .WithExposedHeaders("Pagination")
-                          // nếu muốn, bạn có thể liệt kê thêm các header tuỳ chỉnh khác ở đây
                           ;
                 });
             });

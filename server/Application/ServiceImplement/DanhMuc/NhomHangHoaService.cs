@@ -2,9 +2,9 @@
 using Application.Mappings;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
-using Core.Entities.Domain;
+using Core.Entities.Domain.DanhMuc;
 using Core.Helpers;
-using Core.Interfaces.IRepository;
+using Core.Interfaces.IRepository.IDanhMuc;
 
 namespace Application.ServiceImplement.DanhMuc
 {
@@ -25,7 +25,7 @@ namespace Application.ServiceImplement.DanhMuc
             var pagedData = await _repository.GetAllAsync(paginationParams);
 
             // Map to DTOs using extension method
-            return pagedData.MapTo<NhomHangHoa, NhomHangHoaDto>(_mapper);
+            return pagedData.MapTo<Dm_NhomHangHoa, NhomHangHoaDto>(_mapper);
         }
 
         public async Task<NhomHangHoaDto> AddAsync(CreateNhomHangHoaDto createNhomHangHoaDto)
@@ -37,7 +37,7 @@ namespace Application.ServiceImplement.DanhMuc
             }
 
             // Map to entity
-            var entity = _mapper.Map<NhomHangHoa>(createNhomHangHoaDto);
+            var entity = _mapper.Map<Dm_NhomHangHoa>(createNhomHangHoaDto);
             
             // Add to repository
             var result = await _repository.AddAsync(entity);
@@ -62,7 +62,7 @@ namespace Application.ServiceImplement.DanhMuc
             }
 
             // Map to entity
-            var entity = _mapper.Map<NhomHangHoa>(updateNhomHangHoaDto);
+            var entity = _mapper.Map<Dm_NhomHangHoa>(updateNhomHangHoaDto);
 
             // Update and return result
             return await _repository.UpdateAsync(entity);
@@ -160,7 +160,7 @@ namespace Application.ServiceImplement.DanhMuc
             var pagedData = await _repository.GetFilteredAsync(specParams);
             
             // Map to DTOs using extension method
-            return pagedData.MapTo<NhomHangHoa, NhomHangHoaDto>(_mapper);
+            return pagedData.MapTo<Dm_NhomHangHoa, NhomHangHoaDto>(_mapper);
         }
 
         public async Task<PagedList<NhomHangHoaDto>> SearchAsync(SearchParams searchParams)
@@ -177,7 +177,7 @@ namespace Application.ServiceImplement.DanhMuc
             var pagedData = await _repository.GetFilteredAsync(specParams);
 
             // Map to DTOs using extension method
-            return pagedData.MapTo<NhomHangHoa, NhomHangHoaDto>(_mapper);
+            return pagedData.MapTo<Dm_NhomHangHoa, NhomHangHoaDto>(_mapper);
         }
     }
 }

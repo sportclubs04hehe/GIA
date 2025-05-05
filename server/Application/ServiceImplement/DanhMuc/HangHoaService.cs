@@ -3,9 +3,9 @@ using Application.Mappings;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Core.Entities.Domain;
+using Core.Entities.Domain.DanhMuc;
 using Core.Helpers;
-using Core.Interfaces.IRepository;
+using Core.Interfaces.IRepository.IDanhMuc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.ServiceImplement.DanhMuc
@@ -23,7 +23,7 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<HangHoaDto> AddAsync(HangHoaDto hangHoaDto)
         {
-            var hangHoa = _mapper.Map<HangHoa>(hangHoaDto);
+            var hangHoa = _mapper.Map<Dm_HangHoa>(hangHoaDto);
             var result = await _hangHoaRepository.AddAsync(hangHoa);
             return _mapper.Map<HangHoaDto>(result);
         }
@@ -31,7 +31,7 @@ namespace Application.ServiceImplement.DanhMuc
         public async Task<(bool IsSuccess, List<HangHoaDto> Data, List<string> Errors)> CreateManyAsync(List<HangHoaCreateDto> dtos)
         {
             var errors = new List<string>();
-            var validEntities = new List<HangHoa>();
+            var validEntities = new List<Dm_HangHoa>();
 
             foreach (var dto in dtos)
             {
@@ -42,7 +42,7 @@ namespace Application.ServiceImplement.DanhMuc
                     continue;
                 }
 
-                var entity = _mapper.Map<HangHoa>(dto);
+                var entity = _mapper.Map<Dm_HangHoa>(dto);
                 validEntities.Add(entity);
             }
 
@@ -79,13 +79,13 @@ namespace Application.ServiceImplement.DanhMuc
         public async Task<PagedList<HangHoaDto>> GetActiveHangHoaAsync(PaginationParams paginationParams)
         {
             var hangHoas = await _hangHoaRepository.GetActiveHangHoaAsync(paginationParams);
-            return hangHoas.MapTo<HangHoa, HangHoaDto>(_mapper);
+            return hangHoas.MapTo<Dm_HangHoa, HangHoaDto>(_mapper);
         }
 
         public async Task<PagedList<HangHoaDto>> GetAllAsync(PaginationParams paginationParams)
         {
             var hangHoas = await _hangHoaRepository.GetAllAsync(paginationParams);
-            return hangHoas.MapTo<HangHoa, HangHoaDto>(_mapper);
+            return hangHoas.MapTo<Dm_HangHoa, HangHoaDto>(_mapper);
         }
 
         public async Task<HangHoaDto> GetByIdAsync(Guid id)
@@ -103,13 +103,13 @@ namespace Application.ServiceImplement.DanhMuc
         public async Task<PagedList<HangHoaDto>> GetByNhomHangHoaAsync(Guid nhomHangHoaId, PaginationParams paginationParams)
         {
             var hangHoas = await _hangHoaRepository.GetByNhomHangHoaAsync(nhomHangHoaId, paginationParams);
-            return hangHoas.MapTo<HangHoa, HangHoaDto>(_mapper);
+            return hangHoas.MapTo<Dm_HangHoa, HangHoaDto>(_mapper);
         }
 
         public async Task<PagedList<HangHoaDto>> GetWithFilterAsync(SpecificationParams specParams)
         {
             var hangHoas = await _hangHoaRepository.GetWithFilterAsync(specParams);
-            return hangHoas.MapTo<HangHoa, HangHoaDto>(_mapper);
+            return hangHoas.MapTo<Dm_HangHoa, HangHoaDto>(_mapper);
         }
 
         public async Task<PagedList<HangHoaDto>> SearchAsync(SearchParams p)
@@ -133,7 +133,7 @@ namespace Application.ServiceImplement.DanhMuc
                 return (false, "Mã mặt hàng không được để trống");
                 
             if (string.IsNullOrWhiteSpace(hangHoaDto.TenMatHang))
-                return (false, "TenMatHang cannot be blank");
+                return (false, "Tên mặt hàng không được để trống");
 
             if (!isUpdate)
             {
@@ -166,7 +166,7 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<HangHoaDto> AddAsync(HangHoaCreateDto createDto)
         {
-            var hangHoa = _mapper.Map<HangHoa>(createDto);
+            var hangHoa = _mapper.Map<Dm_HangHoa>(createDto);
             var result = await _hangHoaRepository.AddAsync(hangHoa);
             return _mapper.Map<HangHoaDto>(result);
         }
@@ -187,7 +187,7 @@ namespace Application.ServiceImplement.DanhMuc
                 return (false, errorMessage);
             }
 
-            var hangHoa = _mapper.Map<HangHoa>(updateDto);
+            var hangHoa = _mapper.Map<Dm_HangHoa>(updateDto);
             var success = await _hangHoaRepository.UpdateAsync(hangHoa);
 
             if (!success)

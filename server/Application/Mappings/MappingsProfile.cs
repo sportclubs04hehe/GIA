@@ -1,8 +1,9 @@
-﻿using Application.DTOs.DanhMuc.HangHoasDto;
+﻿using Application.DTOs.DanhMuc.DonViTinhDto;
+using Application.DTOs.DanhMuc.HangHoasDto;
 using Application.DTOs.DanhMuc.NhomHangHoasDto;
 using Application.Resolver;
 using AutoMapper;
-using Core.Entities.Domain;
+using Core.Entities.Domain.DanhMuc;
 
 namespace Application.Mappings
 {
@@ -11,22 +12,22 @@ namespace Application.Mappings
         public MappingsProfile()
         {
             // NhomHangHoa mappings
-            CreateMap<NhomHangHoa, NhomHangHoaDto>();
-            CreateMap<NhomHangHoaDto, NhomHangHoa>();
+            CreateMap<Dm_NhomHangHoa, NhomHangHoaDto>();
+            CreateMap<NhomHangHoaDto, Dm_NhomHangHoa>();
 
             // HangHoa mappings
-            CreateMap<HangHoa, HangHoaDto>();
-            CreateMap<HangHoaDto, HangHoa>();
+            CreateMap<Dm_HangHoa, HangHoaDto>();
+            CreateMap<HangHoaDto, Dm_HangHoa>();
 
             // HangHoaCreateDto mappings
             CreateMap<HangHoaCreateDto, HangHoaDto>();
-            CreateMap<HangHoaCreateDto, HangHoa>()
+            CreateMap<HangHoaCreateDto, Dm_HangHoa>()
                 .ForMember(dest => dest.NgayHieuLuc,
                     opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
                 .ForMember(dest => dest.NgayHetHieuLuc,
                     opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc));
             CreateMap<HangHoaUpdateDto, HangHoaDto>();
-            CreateMap<HangHoaUpdateDto, HangHoa>()
+            CreateMap<HangHoaUpdateDto, Dm_HangHoa>()
                 .ForMember(dest => dest.NgayHieuLuc,
                     opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
                 .ForMember(dest => dest.NgayHetHieuLuc,
@@ -34,9 +35,24 @@ namespace Application.Mappings
 
             // NhomHangHoa mappings
             CreateMap<CreateNhomHangHoaDto, NhomHangHoaDto>();
-            CreateMap<CreateNhomHangHoaDto, NhomHangHoa>();
+            CreateMap<CreateNhomHangHoaDto, Dm_NhomHangHoa>();
             CreateMap<UpdateNhomHangHoaDto, NhomHangHoaDto>();
-            CreateMap<UpdateNhomHangHoaDto, NhomHangHoa>();
+            CreateMap<UpdateNhomHangHoaDto, Dm_NhomHangHoa>();
+
+            //DonViTinh mappings
+            // DonViTinh mappings to add to MappingsProfile.cs
+            CreateMap<Dm_DonViTinh, DonViTinhDto>()
+                .ForMember(d => d.HangHoaIds, o => o.MapFrom(s => s.HangHoas.Select(h => h.Id).ToList()));
+            CreateMap<DonViTinhCreateDto, Dm_DonViTinh>()
+                  .ForMember(dest => dest.NgayHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
+                .ForMember(dest => dest.NgayHetHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc)); ;
+            CreateMap<DonViTinhUpdateDto, Dm_DonViTinh>()
+                .ForMember(dest => dest.NgayHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
+                .ForMember(dest => dest.NgayHetHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc)); ;
         }
     }
 }

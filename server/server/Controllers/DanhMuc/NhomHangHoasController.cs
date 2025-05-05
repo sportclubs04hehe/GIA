@@ -4,6 +4,8 @@ using Application.ServiceInterface.IDanhMuc;
 using Core.Helpers;
 using server.Helpers;
 using Application.DTOs.DanhMuc.NhomHangHoasDto;
+using Application.ServiceImplement.DanhMuc;
+using server.Errors;
 
 namespace server.Controllers.DanhMuc
 { 
@@ -64,34 +66,40 @@ namespace server.Controllers.DanhMuc
             }
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateNhomHangHoaDto updateDto)
-        {
-            if (updateDto == null)
-                return BadRequest("Request body cannot be empty");
+        //[HttpPut("{id}")]
+        //public async Task<IActionResult> Update(Guid id, [FromBody] UpdateNhomHangHoaDto updateDto)
+        //{
+        //    if (updateDto == null)
+        //        return BadRequest(ApiResponse.BadRequest(THONGBAO, "Dữ liệu cập nhật không hợp lệ"));
 
-            updateDto.Id = id;
+        //    updateDto.Id = id;
+        //    var (isSuccess, errorMessage) = await _hangHoaService.UpdateAsync(updateDto);
 
-            return await ExecuteWithExistenceCheckAsync(
-                id,
-                () => _nhomHangHoaService.ExistsAsync(id),
-                async () => await _nhomHangHoaService.UpdateAsync(updateDto),
-                $"Product group with ID {id} not found",
-                $"Product group {id} updated successfully",
-                "Failed to update product group");
-        }
+        //    if (!isSuccess)
+        //    {
+        //        if (!string.IsNullOrEmpty(errorMessage))
+        //            return BadRequest(ApiResponse.BadRequest(THONGBAO, errorMessage));
+
+        //        return NotFound(ApiResponse.NotFound(THONGBAO, $"Mặt hàng này không tồn tại"));
+        //    }
+
+        //    var dto = await _hangHoaService.GetByIdAsync(id);
+        //    if (dto == null)
+        //        return NotFound(ApiResponse.NotFound(THONGBAO, $"Không tìm thấy sản phẩm sau khi cập nhật"));
+
+        //    // Return success with ApiResponse format
+        //    return Ok(ApiResponse<HangHoaDto>.Success(dto, THONGBAO, "Cập nhật mặt hàng thành công"));
+        //}
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            return await ExecuteWithExistenceCheckAsync(
+        public async Task<ActionResult<ApiResponse<Guid>>> Delete(Guid id)
+             => await ExecuteWithExistenceCheckAsync(
                 id,
-                () => _nhomHangHoaService.ExistsAsync(id),
-                async () => await _nhomHangHoaService.DeleteAsync(id),
-                $"Product group with ID {id} not found",
-                $"Product group {id} deleted successfully",
-                "Failed to delete product group");
-        }
+                 () => _nhomHangHoaService.ExistsAsync(id),
+                 () => _nhomHangHoaService.DeleteAsync(id),
+                 notFoundMessage: $"Không tìm thấy mặt hàng",
+                 successMessage: $"Xóa mặt hàng thành công"
+         );
 
         [HttpGet("root")]
         public async Task<ActionResult<List<NhomHangHoaDto>>> GetRootGroups()

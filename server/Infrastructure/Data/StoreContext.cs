@@ -1,4 +1,4 @@
-﻿using Core.Entities.Domain;
+﻿using Core.Entities.Domain.DanhMuc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data
@@ -9,24 +9,32 @@ namespace Infrastructure.Data
         {
         }
 
-        public DbSet<NhomHangHoa> NhomHangHoas { get; set; }
-        public DbSet<HangHoa> HangHoas { get; set; }
+        public DbSet<Dm_NhomHangHoa> NhomHangHoas { get; set; }
+        public DbSet<Dm_HangHoa> HangHoas { get; set; }
+        public DbSet<Dm_DonViTinh> DonViTinhs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<NhomHangHoa>()
+            modelBuilder.Entity<Dm_NhomHangHoa>()
             .HasOne(n => n.NhomCha)
             .WithMany(n => n.NhomCon)
             .HasForeignKey(n => n.NhomChaId)
-            .OnDelete(DeleteBehavior.Restrict); // ✅ PostgreSQL sẽ sinh "ON DELETE RESTRICT"
+            .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<HangHoa>()
+            modelBuilder.Entity<Dm_HangHoa>()
                 .HasOne(h => h.NhomHangHoa)
                 .WithMany(n => n.HangHoas)
                 .HasForeignKey(h => h.NhomHangHoaId)
-                .OnDelete(DeleteBehavior.Restrict); // ✅ Ngăn xóa dây chuyền
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            // Configure the relationship between HangHoa and DonViTinh
+            modelBuilder.Entity<Dm_HangHoa>()
+                .HasOne(h => h.DonViTinh)
+                .WithMany(d => d.HangHoas)
+                .HasForeignKey(h => h.DonViTinhId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete
         }
     }
 }

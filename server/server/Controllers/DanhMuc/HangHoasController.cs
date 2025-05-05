@@ -183,33 +183,42 @@ namespace server.Controllers.DanhMuc
         /// Thêm mới hàng hóa
         /// </summary>
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Add([FromBody] HangHoaCreateDto createDto)
+        [ProducesResponseType(typeof(ApiResponse<HangHoaDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<HangHoaDto>>> Add([FromBody] HangHoaCreateDto createDto)
         {
             if (createDto == null)
-                return BadRequest("Request body cannot be empty");
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Dữ liệu đầu vào không hợp lệ"));
 
             try
             {
-                // Validate input
                 var validation = await _hangHoaService.ValidateCreateHangHoaAsync(createDto);
-
                 if (!validation.IsValid)
-                    return BadRequest(new { message = validation.ErrorMessage });
+                    return BadRequest(ApiResponse<HangHoaDto>.BadRequest(
+                        title: THONGBAO,
+                        message: validation.ErrorMessage
+                    ));
 
                 var result = await _hangHoaService.AddAsync(createDto);
 
-                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+                return CreatedAtAction(
+                    nameof(GetById),
+                    routeValues: new { id = result.Id },
+                    value: ApiResponse<HangHoaDto>.Created(
+                        data: result,
+                        title: THONGBAO,
+                        message: "Tạo mặt hàng thành công"
+                    )
+                );
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while adding the product");
+                return StatusCode(500, ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi thêm mới mặt hàng"));
             }
         }
 
@@ -276,14 +285,14 @@ namespace server.Controllers.DanhMuc
         /// Cập nhật thông tin hàng hóa, trả về DTO bản ghi đã được sửa
         /// </summary>
         [HttpPut("{id:guid}")]
-        [ProducesResponseType(typeof(HangHoaDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<HangHoaDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Update(Guid id, [FromBody] HangHoaUpdateDto updateDto)
         {
             if (updateDto == null)
-                return BadRequest(ApiResponse.BadRequest("Invalid payload"));
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Dữ liệu cập nhật không hợp lệ"));
 
             updateDto.Id = id;
             var (isSuccess, errorMessage) = await _hangHoaService.UpdateAsync(updateDto);
@@ -298,10 +307,10 @@ namespace server.Controllers.DanhMuc
 
             var dto = await _hangHoaService.GetByIdAsync(id);
             if (dto == null)
-                return NotFound(ApiResponse.NotFound(THONGBAO, $"Không tim thấy sản phẩm sau khi cập nhật   "));
+                return NotFound(ApiResponse.NotFound(THONGBAO, $"Không tìm thấy sản phẩm sau khi cập nhật"));
 
-            // On success, return the updated DTO directly
-            return Ok(dto);
+            // Return success with ApiResponse format
+            return Ok(ApiResponse<HangHoaDto>.Success(dto, THONGBAO, "Cập nhật mặt hàng thành công"));
         }
 
         /// <summary>
@@ -314,16 +323,14 @@ namespace server.Controllers.DanhMuc
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            return await ExecuteWithExistenceCheckAsync(
-                id: id,
-                existsCheck: () => _hangHoaService.ExistsAsync(id),
-                operation: () => _hangHoaService.DeleteAsync(id),
-                notFoundMessage: $"Product with ID {id} not found",
-                successMessage: $"Product deleted successfully: {id}"
-            );
-        }
+        public async Task<ActionResult<ApiResponse<Guid>>> Delete(Guid id)
+            => await ExecuteWithExistenceCheckAsync(
+                id,
+                () => _hangHoaService.ExistsAsync(id),
+                () => _hangHoaService.DeleteAsync(id),
+                notFoundMessage: $"Không tìm thấy mặt hàng",
+                successMessage: $"Xóa mặt hàng thành công"
+        );
 
         /// <summary>
         /// Kiểm tra sự tồn tại của hàng hóa theo ID

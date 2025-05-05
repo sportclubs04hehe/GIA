@@ -2,10 +2,11 @@
 using Core.Helpers;
 using Core.Interfaces.IGeneric;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Infrastructure.Data.Generic
 {
-    public class GenericRepository<T> : IRepository<T> where T : BaseIdentity
+    public class GenericRepository<T> : IGenericRepository<T> where T : BaseIdentity
     {
         protected readonly StoreContext _context;
         protected readonly DbSet<T> _dbSet;
@@ -73,21 +74,29 @@ namespace Infrastructure.Data.Generic
 
         public virtual async Task<PagedList<T>> GetAllAsync(PaginationParams paginationParams)
         {
-            var query = _dbSet.Where(x => !x.IsDelete).AsNoTracking();
-            return await PagedList<T>.CreateAsync(query, paginationParams.PageIndex, paginationParams.PageSize);
+            var q = _dbSet.Where(x => !x.IsDelete).AsNoTracking();
+            q = string.IsNullOrEmpty(paginationParams.OrderBy)
+            ? q.OrderBy(x => x.CreatedDate)
+            : q.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
+
+            return await PagedList<T>.CreateAsync(q, paginationParams.PageIndex, paginationParams.PageSize);
         }
 
-        public virtual async Task<PagedList<T>> SearchAsync(SearchParams searchParams)
+        public async Task<PagedList<T>> SearchAsync(
+         SearchParams p,
+         params Expression<Func<T, string>>[] searchFields)
         {
-            var query = _dbSet.Where(x => !x.IsDelete).AsQueryable();
+            var q = _dbSet.AsNoTracking()
+                          .Where(x => !x.IsDelete);
 
-            if (!string.IsNullOrEmpty(searchParams.SearchTerm))
+            if (!string.IsNullOrWhiteSpace(p.SearchTerm) && searchFields.Length > 0)
             {
-                // Search logic should be overridden in concrete repo if needed
+                q = q.WhereIlikeAny(p.SearchTerm, searchFields);
             }
 
-            query = query.OrderBy(x => x.CreatedDate);
-            return await PagedList<T>.CreateAsync(query, searchParams.PageIndex, searchParams.PageSize);
+            q = q.OrderByDescending(x => x.CreatedDate);
+
+            return await PagedList<T>.CreateAsync(q, p.PageIndex, p.PageSize);
         }
     }
 
