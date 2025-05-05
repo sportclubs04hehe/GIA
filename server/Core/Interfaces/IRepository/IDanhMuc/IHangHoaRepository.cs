@@ -14,7 +14,10 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         Task<PagedList<Dm_HangHoa>> GetActiveHangHoaAsync(PaginationParams paginationParams);
         Task<PagedList<Dm_HangHoa>> GetByNhomHangHoaAsync(Guid nhomHangHoaId, PaginationParams paginationParams);
         Task<PagedList<Dm_HangHoa>> GetWithFilterAsync(SpecificationParams specParams);
-        Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId);
+        Task<bool> ExistsByMaMatHangAsync(
+            string maMatHang,
+            Guid? excludeId = null,
+            CancellationToken cancellationToken = default);
         Task<int> CountAsync();
         IQueryable<Dm_HangHoa> SearchQuery(SearchParams p);
     }

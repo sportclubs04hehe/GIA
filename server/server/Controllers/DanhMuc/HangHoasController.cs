@@ -356,23 +356,35 @@ namespace server.Controllers.DanhMuc
         /// Kiểm tra sự tồn tại của hàng hóa theo mã mặt hàng
         /// </summary>
         [HttpGet("exists-by-ma/{maMatHang}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<bool>> ExistsByMaMatHang(string maMatHang, Guid excludeId)
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<bool>>> ExistsByMaMatHang(
+            [FromRoute] string maMatHang,
+            [FromQuery] Guid? excludeId = null,
+            CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(maMatHang))
-                return BadRequest("Product code cannot be empty");
+            if (string.IsNullOrWhiteSpace(maMatHang))
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Mã mặt hàng không được để trống"));
 
             try
             {
-                var exists = await _hangHoaService.ExistsByMaMatHangAsync(maMatHang, excludeId);
+                var exists = await _hangHoaService
+                    .ExistsByMaMatHangAsync(maMatHang, excludeId, cancellationToken);
+
                 return Ok(exists);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking if product exists by code: {ProductCode}", maMatHang);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while checking product existence");
+                _logger.LogError(ex, "Lỗi khi kiểm tra tồn tại mã hàng {MaMatHang}", maMatHang);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Đã có lỗi khi kiểm tra tồn tại hàng hóa")
+                );
             }
         }
 

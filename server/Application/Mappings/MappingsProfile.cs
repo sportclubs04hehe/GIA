@@ -40,19 +40,19 @@ namespace Application.Mappings
             CreateMap<UpdateNhomHangHoaDto, Dm_NhomHangHoa>();
 
             //DonViTinh mappings
-            // DonViTinh mappings to add to MappingsProfile.cs
             CreateMap<Dm_DonViTinh, DonViTinhDto>()
                 .ForMember(d => d.HangHoaIds, o => o.MapFrom(s => s.HangHoas.Select(h => h.Id).ToList()));
             CreateMap<DonViTinhCreateDto, Dm_DonViTinh>()
                   .ForMember(dest => dest.NgayHieuLuc,
                     opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
                 .ForMember(dest => dest.NgayHetHieuLuc,
-                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc)); ;
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc));
             CreateMap<DonViTinhUpdateDto, Dm_DonViTinh>()
                 .ForMember(dest => dest.NgayHieuLuc,
                     opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
                 .ForMember(dest => dest.NgayHetHieuLuc,
-                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc)); ;
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc));
+            CreateMap<DonViTinhCreateDto, DonViTinhDto>();
         }
     }
 }

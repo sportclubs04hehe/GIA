@@ -71,18 +71,50 @@ namespace server.Controllers.DanhMuc
         }
 
         /// <summary>
-        /// Tạo mới đơn vị tính
+        /// Thêm mới đơn vị tính
         /// </summary>
         [HttpPost]
-        [ProducesResponseType(typeof(DonViTinhDto), (int)HttpStatusCode.Created)]
-        [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public async Task<ActionResult<DonViTinhDto>> Create([FromBody] DonViTinhCreateDto createDto)
+        [ProducesResponseType(typeof(ApiResponse<DonViTinhDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<DonViTinhDto>>> Add([FromBody] DonViTinhCreateDto createDto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-                
-            var result = await _donViTinhService.CreateAsync(createDto);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            if (createDto == null)
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Dữ liệu đầu vào không hợp lệ"));
+
+            try
+            {
+                var validation = await _donViTinhService.ValidateCreateAsync(createDto);
+                if (!validation.IsValid)
+                    return BadRequest(ApiResponse<DonViTinhDto>.BadRequest(
+                        title: THONGBAO,
+                        message: validation.ErrorMessage
+                    ));
+
+                var result = await _donViTinhService.CreateAsync(createDto);
+
+                return CreatedAtAction(
+                    nameof(GetById),
+                    routeValues: new { id = result.Id },
+                    value: ApiResponse<DonViTinhDto>.Created(
+                        data: result,
+                        title: THONGBAO,
+                        message: "Tạo đơn vị tính thành công"
+                    )
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                // Log ex nếu cần
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi tạo mới đơn vị tính")
+                );
+            }
         }
 
         /// <summary>

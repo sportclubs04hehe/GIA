@@ -129,10 +129,19 @@ namespace Infrastructure.Data.Repository
            .CountAsync(h => !h.IsDelete);      
 
 
-        public async Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId)
+        public Task<bool> ExistsByMaMatHangAsync(
+            string maMatHang,
+            Guid? excludeId = null,
+            CancellationToken cancellationToken = default)
         {
-            return await _dbSet
-                .AnyAsync(h => h.MaMatHang == maMatHang && h.Id != excludeId && !h.IsDelete);
+            var query = _dbSet
+                .AsNoTracking()
+                .Where(x => x.MaMatHang == maMatHang && !x.IsDelete);
+
+            if (excludeId.HasValue)
+                query = query.Where(x => x.Id != excludeId.Value);
+
+            return query.AnyAsync(cancellationToken);
         }
     }
 }

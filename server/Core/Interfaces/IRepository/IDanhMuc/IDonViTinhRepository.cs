@@ -11,6 +11,10 @@ namespace Core.Interfaces.IRepository.IDanhMuc
 {
     public interface IDonViTinhRepository : IGenericRepository<Dm_DonViTinh>
     {
+        Task<bool> ExistsByMaAsync(
+        string ma,
+        Guid? excludeId = null,
+        CancellationToken cancellationToken = default);
         Task<Dm_DonViTinh> GetByMaAsync(string ma);
         Task<bool> IsMaUniqueAsync(string ma, Guid? id = null);
         Task<PagedList<Dm_DonViTinh>> SearchByNameAsync(SearchParams searchParams);

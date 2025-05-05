@@ -71,11 +71,20 @@ namespace Application.ServiceImplement.DanhMuc
             return await _hangHoaRepository.ExistsAsync(id);
         }
 
-        public async Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId)
+        public Task<bool> ExistsByMaMatHangAsync(
+            string maMatHang,
+            Guid? excludeId = null,
+            CancellationToken cancellationToken = default)
         {
-            return await _hangHoaRepository.ExistsByMaMatHangAsync(maMatHang, excludeId);
-        }
+            if (string.IsNullOrWhiteSpace(maMatHang))
+                throw new ArgumentException("Mã mặt hàng không được để trống", nameof(maMatHang));
 
+            return _hangHoaRepository.ExistsByMaMatHangAsync(
+                maMatHang,
+                excludeId,
+                cancellationToken
+            );
+        }
         public async Task<PagedList<HangHoaDto>> GetActiveHangHoaAsync(PaginationParams paginationParams)
         {
             var hangHoas = await _hangHoaRepository.GetActiveHangHoaAsync(paginationParams);
@@ -127,24 +136,21 @@ namespace Application.ServiceImplement.DanhMuc
             );
         }
 
-        public async Task<(bool IsValid, string ErrorMessage)> ValidateHangHoaAsync(HangHoaDto hangHoaDto, bool isUpdate = false)
+        public async Task<(bool IsValid, string ErrorMessage)> ValidateHangHoaAsync(
+         HangHoaDto hangHoaDto,
+         bool isUpdate = false)
         {
             if (string.IsNullOrWhiteSpace(hangHoaDto.MaMatHang))
                 return (false, "Mã mặt hàng không được để trống");
-                
+
             if (string.IsNullOrWhiteSpace(hangHoaDto.TenMatHang))
                 return (false, "Tên mặt hàng không được để trống");
 
             if (!isUpdate)
             {
-                var exists = await ExistsByMaMatHangAsync(hangHoaDto.MaMatHang, hangHoaDto.Id);
+                // <-- đây sửa: không truyền hangHoaDto.Id
+                var exists = await ExistsByMaMatHangAsync(hangHoaDto.MaMatHang, excludeId: null);
                 if (exists)
-                    return (false, $"Mã mặt hàng {hangHoaDto.MaMatHang} đã tồn tại");
-            }
-            else
-            {
-                var existingHangHoa = await GetByMaMatHangAsync(hangHoaDto.MaMatHang);
-                if (existingHangHoa != null && existingHangHoa.Id != hangHoaDto.Id)
                     return (false, $"Mã mặt hàng {hangHoaDto.MaMatHang} đã tồn tại");
             }
 
@@ -158,7 +164,7 @@ namespace Application.ServiceImplement.DanhMuc
         {
             // Map createDto to HangHoaDto for common validation
             var hangHoaDto = _mapper.Map<HangHoaDto>(createDto);
-            
+
             // Use the existing validation method with isUpdate=false
             return await ValidateHangHoaAsync(hangHoaDto, false);
         }

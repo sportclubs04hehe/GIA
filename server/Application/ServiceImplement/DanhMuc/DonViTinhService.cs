@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.DanhMuc.DonViTinhDto;
+using Application.DTOs.DanhMuc.HangHoasDto;
 using Application.Mappings;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
@@ -25,11 +26,6 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<DonViTinhDto> CreateAsync(DonViTinhCreateDto createDto)
         {
-            // Validate uniqueness of Ma
-            if (!await _repository.IsMaUniqueAsync(createDto.Ma))
-                throw new InvalidOperationException($"Mã đơn vị tính '{createDto.Ma}' đã tồn tại.");
-
-            // Map DTO to entity
             var entity = _mapper.Map<Dm_DonViTinh>(createDto);
 
             // Save to database
@@ -65,6 +61,11 @@ namespace Application.ServiceImplement.DanhMuc
         public async Task<bool> ExistsAsync(Guid id)
         {
             return await _repository.ExistsAsync(id);
+        }
+
+        public async Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId)
+        {
+            return await _repository.ExistsByMaAsync(maMatHang, excludeId);
         }
 
         public async Task<PagedList<DonViTinhDto>> GetAllAsync(PaginationParams paginationParams)
@@ -108,6 +109,40 @@ namespace Application.ServiceImplement.DanhMuc
             return result
                 ? (true, null)
                 : (false, "Cập nhật đơn vị tính không thành công.");
+        }
+
+        private async Task<(bool IsValid, string ErrorMessage)> ValidateHangHoaAsync(DonViTinhDto dto, bool isUpdate = false)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Ma))
+            {
+                return (false, "Mã không được để trống.");
+            }
+            else if (string.IsNullOrWhiteSpace(dto.Ten))
+            {
+                return (false, "Tên không được để trống.");
+            }
+
+            if (!isUpdate)
+            {
+                var exists = await _repository.ExistsByMaAsync(dto.Ma, excludeId: null);
+                if (exists)
+                {
+                    return (false, $"Mã đã tồn tại.");
+                }
+            }
+            
+            if(dto.NgayHieuLuc > dto.NgayHetHieuLuc)
+            {
+                return (false, "Ngày hiệu lực không được lớn hơn ngày hết hiệu lực.");
+            }
+
+            return (true, string.Empty);
+        }
+
+        public async Task<(bool IsValid, string ErrorMessage)> ValidateCreateAsync(DonViTinhCreateDto dto)
+        {
+            var donViTinhDto = _mapper.Map<DonViTinhDto>(dto);
+            return await ValidateHangHoaAsync(donViTinhDto);
         }
     }
 }

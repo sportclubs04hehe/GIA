@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.DanhMuc.DonViTinhDto;
+using Application.DTOs.DanhMuc.HangHoasDto;
 using Core.Helpers;
 
 namespace Application.ServiceInterface.IDanhMuc
@@ -14,5 +15,7 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<(bool isSuccess, string? errorMessage)> UpdateAsync(DonViTinhUpdateDto updateDto);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
+        Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId);
+        Task<(bool IsValid, string ErrorMessage)> ValidateCreateAsync(DonViTinhCreateDto dto);
     }
 }

@@ -50,5 +50,23 @@ namespace Infrastructure.Data.Repository
         {
             return base.SearchAsync(p, x => x.Ten, x => x.Ma);
         }
+
+        public Task<bool> ExistsByMaAsync(
+        string ma,
+        Guid? excludeId = null,
+        CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(ma))
+                throw new ArgumentException("Mã không được để trống", nameof(ma));
+
+            var query = _dbSet
+                .AsNoTracking()
+                .Where(x => x.Ma == ma && !x.IsDelete);
+
+            if (excludeId.HasValue)
+                query = query.Where(x => x.Id != excludeId.Value);
+            return query.AnyAsync(cancellationToken);
+        }
+
     }
 }

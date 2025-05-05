@@ -63,8 +63,10 @@ namespace Application.ServiceInterface.IDanhMuc
         /// <summary>
         /// Kiểm tra sự tồn tại của hàng hóa theo mã mặt hàng.
         /// </summary>
-        Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId);
-
+        Task<bool> ExistsByMaMatHangAsync(
+                    string maMatHang,
+                    Guid? excludeId = null,
+                    CancellationToken cancellationToken = default);
         /// <summary>
         /// Kiểm tra tính hợp lệ của hàng hóa trước khi thêm mới hoặc cập nhật.
         /// </summary>

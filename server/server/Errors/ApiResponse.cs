@@ -25,7 +25,7 @@
             _ => $"Status code {statusCode}"
         };
 
-        public static ApiResponse Success(string? title = null, string? message = null)
+        public static ApiResponse Success(string? title = null, string? message = null, bool data = false)
             => new(200, title ?? "Success", message);
         public static ApiResponse BadRequest(string? title = null, string? message = null)
             => new(400, title ?? "Bad Request", message);
