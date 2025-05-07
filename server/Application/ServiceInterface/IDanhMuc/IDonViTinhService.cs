@@ -15,7 +15,7 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<(bool isSuccess, string? errorMessage)> UpdateAsync(DonViTinhUpdateDto updateDto);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
-        Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId);
+        Task<bool> ExistsByMaAsync(string maMatHang, Guid? excludeId, CancellationToken cancellationToken = default);
         Task<(bool IsValid, string ErrorMessage)> ValidateCreateAsync(DonViTinhCreateDto dto);
     }
 }

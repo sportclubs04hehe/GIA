@@ -70,6 +70,38 @@ namespace server.Controllers.DanhMuc
             return Ok(donViTinh);
         }
 
+        [HttpGet("exists-by-ma/{maMatHang}")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<bool>>> ExistsByMaMatHang(
+            [FromRoute] string maMatHang,
+            [FromQuery] Guid? excludeId = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(maMatHang))
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Mã không được để trống"));
+
+            try
+            {
+                var exists = await _donViTinhService
+                    .ExistsByMaAsync(maMatHang, excludeId, cancellationToken);
+
+                return Ok(exists);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Đã có lỗi khi kiểm tra tồn tại hàng hóa")
+                );
+            }
+        }
+
         /// <summary>
         /// Thêm mới đơn vị tính
         /// </summary>

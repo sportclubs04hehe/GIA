@@ -63,9 +63,12 @@ namespace Application.ServiceImplement.DanhMuc
             return await _repository.ExistsAsync(id);
         }
 
-        public async Task<bool> ExistsByMaMatHangAsync(string maMatHang, Guid excludeId)
+        public async Task<bool> ExistsByMaAsync(
+            string maMatHang, 
+            Guid? excludeId = null,
+            CancellationToken cancellationToken = default)
         {
-            return await _repository.ExistsByMaAsync(maMatHang, excludeId);
+            return await _repository.ExistsByMaAsync(maMatHang, excludeId, cancellationToken);
         }
 
         public async Task<PagedList<DonViTinhDto>> GetAllAsync(PaginationParams paginationParams)
