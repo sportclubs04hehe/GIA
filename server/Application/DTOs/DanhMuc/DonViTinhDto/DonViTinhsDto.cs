@@ -1,6 +1,6 @@
 ﻿namespace Application.DTOs.DanhMuc.DonViTinhDto
 {
-    public class DonViTinhDto : BaseDto
+    public class DonViTinhsDto : BaseDto
     {
         public string Ten { get; set; } = null!;
         public string Ma { get; set; } = null!;

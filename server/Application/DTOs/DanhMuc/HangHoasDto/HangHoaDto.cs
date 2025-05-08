@@ -1,3 +1,4 @@
+using Application.DTOs.DanhMuc.DonViTinhDto;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -31,5 +32,7 @@ namespace Application.DTOs.DanhMuc.HangHoasDto
         public DateTime NgayHetHieuLuc { get; set; }
 
         public Guid? NhomHangHoaId { get; set; }
+        public Guid? DonViTinhId { get; internal set; }
+        public DonViTinhsDto? DonViTinhDto { get; set; } = null!;
     }
 }

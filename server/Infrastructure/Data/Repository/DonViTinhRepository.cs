@@ -17,6 +17,13 @@ namespace Infrastructure.Data.Repository
         {
         }
 
+        public IQueryable<Dm_DonViTinh> GetActive()
+        {
+            return _context.Set<Dm_DonViTinh>()
+                .Where(d => !d.IsDelete)
+                .AsNoTracking();
+        }
+
         public async Task<Dm_DonViTinh> GetByMaAsync(string ma)
         {
             return await _dbSet.FirstOrDefaultAsync(x => x.Ma == ma && !x.IsDelete);

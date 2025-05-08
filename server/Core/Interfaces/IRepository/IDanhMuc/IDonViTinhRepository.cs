@@ -11,6 +11,7 @@ namespace Core.Interfaces.IRepository.IDanhMuc
 {
     public interface IDonViTinhRepository : IGenericRepository<Dm_DonViTinh>
     {
+        IQueryable<Dm_DonViTinh> GetActive();
         Task<bool> ExistsByMaAsync(
         string ma,
         Guid? excludeId = null,

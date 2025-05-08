@@ -21,13 +21,6 @@ namespace Application.ServiceImplement.DanhMuc
             _mapper = mapper;
         }
 
-        public async Task<HangHoaDto> AddAsync(HangHoaDto hangHoaDto)
-        {
-            var hangHoa = _mapper.Map<Dm_HangHoa>(hangHoaDto);
-            var result = await _hangHoaRepository.AddAsync(hangHoa);
-            return _mapper.Map<HangHoaDto>(result);
-        }
-
         public async Task<(bool IsSuccess, List<HangHoaDto> Data, List<string> Errors)> CreateManyAsync(List<HangHoaCreateDto> dtos)
         {
             var errors = new List<string>();

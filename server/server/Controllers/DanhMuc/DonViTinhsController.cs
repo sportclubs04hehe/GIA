@@ -22,18 +22,26 @@ namespace server.Controllers.DanhMuc
         /// Lấy danh sách đơn vị tính có phân trang
         /// </summary>
         [HttpGet]
-        [ProducesResponseType(typeof(PagedList<DonViTinhDto>), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<PagedList<DonViTinhDto>>> GetAll([FromQuery] PaginationParams paginationParams)
+        [ProducesResponseType(typeof(PagedList<DonViTinhsDto>), (int)HttpStatusCode.OK)]
+        public async Task<ActionResult<PagedList<DonViTinhsDto>>> GetAll([FromQuery] PaginationParams paginationParams)
         {
             return await ExecutePagedAsync(() => _donViTinhService.GetAllAsync(paginationParams));
+        }
+
+        [HttpGet("get-all-select")]
+        [ProducesResponseType(typeof(PagedList<DonViTinhSelectDto>), (int)HttpStatusCode.OK)]
+        public async Task<ActionResult<PagedList<DonViTinhSelectDto>>> GetAllSelect(
+            [FromQuery] PaginationParams paginationParams)
+        {
+            return await ExecutePagedAsync(() => _donViTinhService.GetAllSelectAsync(paginationParams));
         }
 
         /// <summary>
         /// Tìm kiếm đơn vị tính
         /// </summary>
         [HttpGet("search")]
-        [ProducesResponseType(typeof(PagedList<DonViTinhDto>), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<PagedList<DonViTinhDto>>> Search([FromQuery] SearchParams searchParams)
+        [ProducesResponseType(typeof(PagedList<DonViTinhsDto>), (int)HttpStatusCode.OK)]
+        public async Task<ActionResult<PagedList<DonViTinhsDto>>> Search([FromQuery] SearchParams searchParams)
         {
             return await ExecutePagedAsync(() => _donViTinhService.SearchAsync(searchParams));
         }
@@ -42,9 +50,9 @@ namespace server.Controllers.DanhMuc
         /// Lấy đơn vị tính theo ID
         /// </summary>
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(DonViTinhDto), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(DonViTinhsDto), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<ActionResult<DonViTinhDto>> GetById(Guid id)
+        public async Task<ActionResult<DonViTinhsDto>> GetById(Guid id)
         {
             var donViTinh = await _donViTinhService.GetByIdAsync(id);
             
@@ -58,9 +66,9 @@ namespace server.Controllers.DanhMuc
         /// Lấy đơn vị tính theo mã
         /// </summary>
         [HttpGet("ma/{ma}")]
-        [ProducesResponseType(typeof(DonViTinhDto), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(DonViTinhsDto), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<ActionResult<DonViTinhDto>> GetByMa(string ma)
+        public async Task<ActionResult<DonViTinhsDto>> GetByMa(string ma)
         {
             var donViTinh = await _donViTinhService.GetByMaAsync(ma);
             
@@ -106,10 +114,10 @@ namespace server.Controllers.DanhMuc
         /// Thêm mới đơn vị tính
         /// </summary>
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<DonViTinhDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<DonViTinhsDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<DonViTinhDto>>> Add([FromBody] DonViTinhCreateDto createDto)
+        public async Task<ActionResult<ApiResponse<DonViTinhsDto>>> Add([FromBody] DonViTinhCreateDto createDto)
         {
             if (createDto == null)
                 return BadRequest(ApiResponse.BadRequest(THONGBAO, "Dữ liệu đầu vào không hợp lệ"));
@@ -118,7 +126,7 @@ namespace server.Controllers.DanhMuc
             {
                 var validation = await _donViTinhService.ValidateCreateAsync(createDto);
                 if (!validation.IsValid)
-                    return BadRequest(ApiResponse<DonViTinhDto>.BadRequest(
+                    return BadRequest(ApiResponse<DonViTinhsDto>.BadRequest(
                         title: THONGBAO,
                         message: validation.ErrorMessage
                     ));
@@ -128,7 +136,7 @@ namespace server.Controllers.DanhMuc
                 return CreatedAtAction(
                     nameof(GetById),
                     routeValues: new { id = result.Id },
-                    value: ApiResponse<DonViTinhDto>.Created(
+                    value: ApiResponse<DonViTinhsDto>.Created(
                         data: result,
                         title: THONGBAO,
                         message: "Tạo đơn vị tính thành công"
@@ -153,9 +161,9 @@ namespace server.Controllers.DanhMuc
         /// Tạo nhiều đơn vị tính
         /// </summary>
         [HttpPost("many")]
-        [ProducesResponseType(typeof(IEnumerable<DonViTinhDto>), (int)HttpStatusCode.Created)]
+        [ProducesResponseType(typeof(IEnumerable<DonViTinhsDto>), (int)HttpStatusCode.Created)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public async Task<ActionResult<IEnumerable<DonViTinhDto>>> CreateMany(
+        public async Task<ActionResult<IEnumerable<DonViTinhsDto>>> CreateMany(
             [FromBody] IEnumerable<DonViTinhCreateDto> createDtos)
         {
             if (!ModelState.IsValid)
@@ -169,7 +177,7 @@ namespace server.Controllers.DanhMuc
         /// Cập nhật đơn vị tính
         /// </summary>
         [HttpPut("{id:guid}")]
-        [ProducesResponseType(typeof(ApiResponse<DonViTinhDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DonViTinhsDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
@@ -194,7 +202,7 @@ namespace server.Controllers.DanhMuc
             if (dto == null)
                 return NotFound(ApiResponse.NotFound(THONGBAO, "Không tìm thấy đơn vị tính sau khi cập nhật"));
 
-            return Ok(ApiResponse<DonViTinhDto>.Success(
+            return Ok(ApiResponse<DonViTinhsDto>.Success(
                 dto,
                 THONGBAO,
                 $"Đơn vị tính '{dto.Ten}' đã được cập nhật thành công"));

@@ -1,5 +1,4 @@
 ﻿using Application.DTOs.DanhMuc.DonViTinhDto;
-using Application.DTOs.DanhMuc.HangHoasDto;
 using Application.Mappings;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
@@ -24,7 +23,7 @@ namespace Application.ServiceImplement.DanhMuc
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        public async Task<DonViTinhDto> CreateAsync(DonViTinhCreateDto createDto)
+        public async Task<DonViTinhsDto> CreateAsync(DonViTinhCreateDto createDto)
         {
             var entity = _mapper.Map<Dm_DonViTinh>(createDto);
 
@@ -32,10 +31,10 @@ namespace Application.ServiceImplement.DanhMuc
             var result = await _repository.AddAsync(entity);
 
             // Map the result back to DTO
-            return _mapper.Map<DonViTinhDto>(result);
+            return _mapper.Map<DonViTinhsDto>(result);
         }
 
-        public async Task<IEnumerable<DonViTinhDto>> CreateManyAsync(IEnumerable<DonViTinhCreateDto> createDtos)
+        public async Task<IEnumerable<DonViTinhsDto>> CreateManyAsync(IEnumerable<DonViTinhCreateDto> createDtos)
         {
             var entities = new List<Dm_DonViTinh>();
 
@@ -50,7 +49,7 @@ namespace Application.ServiceImplement.DanhMuc
             }
 
             var results = await _repository.AddRangeAsync(entities);
-            return _mapper.Map<IEnumerable<DonViTinhDto>>(results);
+            return _mapper.Map<IEnumerable<DonViTinhsDto>>(results);
         }
 
         public async Task<bool> DeleteAsync(Guid id)
@@ -71,28 +70,49 @@ namespace Application.ServiceImplement.DanhMuc
             return await _repository.ExistsByMaAsync(maMatHang, excludeId, cancellationToken);
         }
 
-        public async Task<PagedList<DonViTinhDto>> GetAllAsync(PaginationParams paginationParams)
+        public async Task<PagedList<DonViTinhsDto>> GetAllAsync(PaginationParams paginationParams)
         {
             var entities = await _repository.GetAllAsync(paginationParams);
-            return entities.MapTo<Dm_DonViTinh, DonViTinhDto>(_mapper);
+            return entities.MapTo<Dm_DonViTinh, DonViTinhsDto>(_mapper);
         }
 
-        public async Task<DonViTinhDto> GetByIdAsync(Guid id)
+        public async Task<PagedList<DonViTinhSelectDto>> GetAllSelectAsync(PaginationParams paginationParams)
+        {
+            var query = _repository.GetActive()
+                .Select(d => new DonViTinhSelectDto
+                {
+                    Id = d.Id,
+                    Ma = d.Ma,
+                    Ten = d.Ten
+                });
+
+            if (string.IsNullOrWhiteSpace(paginationParams.OrderBy))
+                query = query.OrderBy(x => x.Ten);
+            else
+                query = query.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
+
+            return await PagedList<DonViTinhSelectDto>.CreateAsync(
+                query,
+                paginationParams.PageIndex,
+                paginationParams.PageSize
+            );
+        }
+        public async Task<DonViTinhsDto> GetByIdAsync(Guid id)
         {
             var entity = await _repository.GetByIdAsync(id);
-            return _mapper.Map<DonViTinhDto>(entity);
+            return _mapper.Map<DonViTinhsDto>(entity);
         }
 
-        public async Task<DonViTinhDto> GetByMaAsync(string ma)
+        public async Task<DonViTinhsDto> GetByMaAsync(string ma)
         {
             var entity = await _repository.GetByMaAsync(ma);
-            return _mapper.Map<DonViTinhDto>(entity);
+            return _mapper.Map<DonViTinhsDto>(entity);
         }
 
-        public async Task<PagedList<DonViTinhDto>> SearchAsync(SearchParams searchParams)
+        public async Task<PagedList<DonViTinhsDto>> SearchAsync(SearchParams searchParams)
         {
             var entities = await _repository.SearchByNameAsync(searchParams);
-            return entities.MapTo<Dm_DonViTinh, DonViTinhDto>(_mapper);
+            return entities.MapTo<Dm_DonViTinh, DonViTinhsDto>(_mapper);
         }
 
         public async Task<(bool isSuccess, string? errorMessage)> UpdateAsync(DonViTinhUpdateDto updateDto)
@@ -114,7 +134,7 @@ namespace Application.ServiceImplement.DanhMuc
                 : (false, "Cập nhật đơn vị tính không thành công.");
         }
 
-        private async Task<(bool IsValid, string ErrorMessage)> ValidateHangHoaAsync(DonViTinhDto dto, bool isUpdate = false)
+        private async Task<(bool IsValid, string ErrorMessage)> ValidateHangHoaAsync(DonViTinhsDto dto, bool isUpdate = false)
         {
             if (string.IsNullOrWhiteSpace(dto.Ma))
             {
@@ -144,7 +164,7 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<(bool IsValid, string ErrorMessage)> ValidateCreateAsync(DonViTinhCreateDto dto)
         {
-            var donViTinhDto = _mapper.Map<DonViTinhDto>(dto);
+            var donViTinhDto = _mapper.Map<DonViTinhsDto>(dto);
             return await ValidateHangHoaAsync(donViTinhDto);
         }
     }
