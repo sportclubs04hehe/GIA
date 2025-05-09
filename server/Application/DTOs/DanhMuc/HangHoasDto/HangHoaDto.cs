@@ -33,6 +33,6 @@ namespace Application.DTOs.DanhMuc.HangHoasDto
 
         public Guid? NhomHangHoaId { get; set; }
         public Guid? DonViTinhId { get; internal set; }
-        public DonViTinhsDto? DonViTinhDto { get; set; } = null!;
+        public DonViTinhSelectDto? DonViTinhSelectDto { get; set; } = null!;
     }
 }

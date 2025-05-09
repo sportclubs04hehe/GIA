@@ -21,7 +21,7 @@ namespace Application.Mappings
             CreateMap<Dm_HangHoa, HangHoaDto>()
                 .ForMember(dest => dest.NhomHangHoaId, opt => opt.MapFrom(src => src.NhomHangHoaId))
                 .ForMember(dest => dest.DonViTinhId, opt => opt.MapFrom(src => src.DonViTinhId))
-                .ForMember(dest => dest.DonViTinhDto, opt => opt.MapFrom(src => src.DonViTinh));
+                .ForMember(dest => dest.DonViTinhSelectDto, opt => opt.MapFrom(src => src.DonViTinh));
 
             // CreateDto → Entity
             CreateMap<HangHoaCreateDto, Dm_HangHoa>()

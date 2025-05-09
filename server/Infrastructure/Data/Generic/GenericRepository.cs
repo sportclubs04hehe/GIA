@@ -72,12 +72,20 @@ namespace Infrastructure.Data.Generic
             return await _dbSet.AnyAsync(x => x.Id == id && !x.IsDelete);
         }
 
+        protected virtual IQueryable<T> IncludeRelations(IQueryable<T> query)
+        => query;
+
         public virtual async Task<PagedList<T>> GetAllAsync(PaginationParams paginationParams)
         {
-            var q = _dbSet.Where(x => !x.IsDelete).AsNoTracking();
+            var q = _dbSet
+                .Where(x => !x.IsDelete)
+                .AsNoTracking();
+
+            q = IncludeRelations(q);
+
             q = string.IsNullOrEmpty(paginationParams.OrderBy)
-            ? q.OrderBy(x => x.CreatedDate)
-            : q.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
+                ? q.OrderBy(x => x.CreatedDate)
+                : q.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
 
             return await PagedList<T>.CreateAsync(q, paginationParams.PageIndex, paginationParams.PageSize);
         }

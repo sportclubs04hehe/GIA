@@ -86,8 +86,9 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<PagedList<HangHoaDto>> GetAllAsync(PaginationParams paginationParams)
         {
-            var hangHoas = await _hangHoaRepository.GetAllAsync(paginationParams);
-            return hangHoas.MapTo<Dm_HangHoa, HangHoaDto>(_mapper);
+            var entities = await _hangHoaRepository.GetAllAsync(paginationParams);
+
+            return entities.MapTo<Dm_HangHoa, HangHoaDto>(_mapper);
         }
 
         public async Task<HangHoaDto> GetByIdAsync(Guid id)

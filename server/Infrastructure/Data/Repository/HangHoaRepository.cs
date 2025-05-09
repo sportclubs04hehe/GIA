@@ -35,18 +35,10 @@ namespace Infrastructure.Data.Repository
                 paginationParams.PageSize);
         }
 
-        public async Task<PagedList<Dm_HangHoa>> GetAllAsync(PaginationParams paginationParams)
+        protected override IQueryable<Dm_HangHoa> IncludeRelations(IQueryable<Dm_HangHoa> query)
         {
-            var query = _dbSet
-                .AsNoTracking()
-                .Where(h => !h.IsDelete)
-                .Include(h => h.NhomHangHoa)
-                .OrderBy(h => h.TenMatHang);
-
-            return await PagedList<Dm_HangHoa>.CreateAsync(
-                query,
-                paginationParams.PageIndex,
-                paginationParams.PageSize);
+            return query
+                .Include(x => x.DonViTinh);
         }
 
         public async Task<PagedList<Dm_HangHoa>> GetByNhomHangHoaAsync(Guid nhomHangHoaId, PaginationParams paginationParams)

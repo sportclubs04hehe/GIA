@@ -26,6 +26,6 @@ namespace Application.DTOs.DanhMuc.HangHoasDto
         [Required]
         public DateTime NgayHetHieuLuc { get; set; }
         public Guid? NhomHangHoaId { get; set; }
-        public object DonViTinhId { get; internal set; }
+        public Guid? DonViTinhId { get; set; }
     }
 }
