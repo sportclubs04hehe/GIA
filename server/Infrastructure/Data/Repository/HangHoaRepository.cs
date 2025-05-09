@@ -99,20 +99,9 @@ namespace Infrastructure.Data.Repository
                 specParams.PageSize);
         }
 
-        public IQueryable<Dm_HangHoa> SearchQuery(SearchParams p)
+        public Task<PagedList<Dm_HangHoa>> SearchQuery(SearchParams p)
         {
-            var searchTerm = p.SearchTerm?.Trim().ToLower();
-            // Tạo pattern LIKE
-            var formattedTerm = $"%{searchTerm}%";
-
-            return _dbSet
-                .AsNoTracking()
-                .Where(h => !h.IsDelete
-                    && (string.IsNullOrEmpty(searchTerm)
-                        || EF.Functions.Like(h.TenMatHang.ToLower(), formattedTerm)
-                        || EF.Functions.Like(h.MaMatHang.ToLower(), formattedTerm)
-                        || (h.GhiChu != null && EF.Functions.Like(h.GhiChu.ToLower(), formattedTerm))))
-                .OrderBy(h => h.TenMatHang);
+            return base.SearchAsync(p, x => x.TenMatHang, x => x.MaMatHang);
         }
 
         public Task<int> CountAsync()

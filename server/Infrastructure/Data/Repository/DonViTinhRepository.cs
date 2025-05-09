@@ -37,23 +37,7 @@ namespace Infrastructure.Data.Repository
             return !await _dbSet.AnyAsync(x => x.Ma == ma && !x.IsDelete);
         }
 
-        public async Task<PagedList<Dm_DonViTinh>> SearchByNameAsync(SearchParams searchParams)
-        {
-            var query = _dbSet.Where(x => !x.IsDelete).AsQueryable();
-
-            if (!string.IsNullOrEmpty(searchParams.SearchTerm))
-            {
-                var searchTermLower = searchParams.SearchTerm.ToLower();
-                query = query.Where(x =>
-                    x.Ten.ToLower().Contains(searchTermLower) ||
-                    x.Ma.ToLower().Contains(searchTermLower));
-            }
-
-            query = query.OrderByDescending(x => x.CreatedDate);
-            return await PagedList<Dm_DonViTinh>.CreateAsync(query, searchParams.PageIndex, searchParams.PageSize);
-        }
-
-        public Task<PagedList<Dm_DonViTinh>> SearchAsync(SearchParams p)
+        public Task<PagedList<Dm_DonViTinh>> SearchByNameAsync(SearchParams p)
         {
             return base.SearchAsync(p, x => x.Ten, x => x.Ma);
         }

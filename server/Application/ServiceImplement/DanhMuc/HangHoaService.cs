@@ -117,17 +117,8 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<PagedList<HangHoaDto>> SearchAsync(SearchParams p)
         {
-            var query = _hangHoaRepository.SearchQuery(p);
-
-            var dtoQuery = query
-                .ProjectTo<HangHoaDto>(_mapper.ConfigurationProvider)
-                .AsNoTracking();
-
-            return await PagedList<HangHoaDto>.CreateAsync(
-                dtoQuery,
-                p.PageIndex,
-                p.PageSize
-            );
+            var ebntities = await _hangHoaRepository.SearchQuery(p);
+            return ebntities.MapTo<Dm_HangHoa, HangHoaDto>(_mapper);
         }
 
         public async Task<(bool IsValid, string ErrorMessage)> ValidateHangHoaAsync(

@@ -174,6 +174,53 @@ namespace server.Controllers.DanhMuc
         }
 
         /// <summary>
+        /// Tạo hoặc lấy nhiều đơn vị tính (nếu đã tồn tại thì không thêm mới)
+        /// </summary>
+        [HttpPost("create-or-get-many")]
+        [ProducesResponseType(typeof(IEnumerable<DonViTinhsDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IEnumerable<DonViTinhsDto>>> CreateOrGetMany(
+            [FromBody] IEnumerable<DonViTinhCreateDto> createDtos)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            
+            var results = new List<DonViTinhsDto>();
+            
+            foreach (var dto in createDtos)
+            {
+                try
+                {
+                    // Try to get existing unit
+                    var existingUnit = await _donViTinhService.GetByMaAsync(dto.Ma);
+                    
+                    if (existingUnit != null)
+                    {
+                        // Unit already exists, add it to results
+                        results.Add(existingUnit);
+                    }
+                    else
+                    {
+                        // Unit doesn't exist, create it
+                        var validation = await _donViTinhService.ValidateCreateAsync(dto);
+                        if (validation.IsValid)
+                        {
+                            var newUnit = await _donViTinhService.CreateAsync(dto);
+                            results.Add(newUnit);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log exception if needed
+                    continue;
+                }
+            }
+            
+            return Ok(results);
+        }
+
+        /// <summary>
         /// Cập nhật đơn vị tính
         /// </summary>
         [HttpPut("{id:guid}")]

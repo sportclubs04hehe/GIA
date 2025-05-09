@@ -19,6 +19,6 @@ namespace Core.Interfaces.IRepository.IDanhMuc
             Guid? excludeId = null,
             CancellationToken cancellationToken = default);
         Task<int> CountAsync();
-        IQueryable<Dm_HangHoa> SearchQuery(SearchParams p);
+        Task<PagedList<Dm_HangHoa>> SearchQuery(SearchParams p);
     }
 }
