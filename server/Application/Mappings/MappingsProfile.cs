@@ -56,7 +56,23 @@ namespace Application.Mappings
             // DonViTinh Entity → DTO
             CreateMap<Dm_DonViTinh, DonViTinhsDto>();
 
+
+            // HangHoaImportDto -> Dm_HangHoa
+            CreateMap<HangHoaImportDto, Dm_HangHoa>()
+                .ForMember(dest => dest.NgayHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
+                .ForMember(dest => dest.NgayHetHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc))
+                .ForMember(dest => dest.DonViTinhId, opt => opt.Ignore())
+                .ForMember(dest => dest.DonViTinh, opt => opt.Ignore())
+                .ForMember(dest => dest.NhomHangHoaId, opt => opt.Ignore())
+                .ForMember(dest => dest.NhomHangHoa, opt => opt.Ignore())
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+                .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.IsDelete, opt => opt.MapFrom(src => false));
+
             #endregion
+
 
             // NhomHangHoa mappings
             CreateMap<CreateNhomHangHoaDto, NhomHangHoaDto>();

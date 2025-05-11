@@ -109,7 +109,6 @@ namespace Infrastructure.Data.Repository
            .AsNoTracking()                     
            .CountAsync(h => !h.IsDelete);      
 
-
         public Task<bool> ExistsByMaMatHangAsync(
             string maMatHang,
             Guid? excludeId = null,

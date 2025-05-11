@@ -270,5 +270,172 @@ namespace server.Controllers.DanhMuc
                 notFoundMessage: $"Không tìm thấy mặt hàng",
                 successMessage: $"Xóa mặt hàng thành công"
         );
+
+        /// <summary>
+        /// Lấy đơn vị tính theo tên
+        /// </summary>
+        [HttpGet("ten/{ten}")]
+        [ProducesResponseType(typeof(DonViTinhsDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<DonViTinhsDto>> GetByTen(string ten)
+        {
+            if (string.IsNullOrWhiteSpace(ten))
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Tên không được để trống"));
+
+            try
+            {
+                var donViTinh = await _donViTinhService.GetByTenAsync(ten);
+                
+                if (donViTinh == null)
+                    return NotFound(ApiResponse.NotFound(THONGBAO, $"Không tìm thấy đơn vị tính với tên: {ten}"));
+                    
+                return Ok(ApiResponse<DonViTinhsDto>.Success(donViTinh, THONGBAO, "Lấy đơn vị tính thành công"));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi tìm đơn vị tính")
+                );
+            }
+        }
+
+        /// <summary>
+        /// Thêm mới đơn vị tính nếu chưa tồn tại
+        /// </summary>
+        [HttpPost("add-if-not-exists")]
+        [ProducesResponseType(typeof(ApiResponse<DonViTinhsDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<DonViTinhsDto>>> AddIfNotExists([FromBody] string ten)
+        {
+            if (string.IsNullOrWhiteSpace(ten))
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Tên không được để trống"));
+
+            try
+            {
+                var result = await _donViTinhService.AddIfNotExistsAsync(ten);
+                var statusCode = StatusCodes.Status200OK;
+                var message = "Đơn vị tính được lấy thành công";
+                
+                // Fix: Handle nullable CreatedDate properly
+                if (result.CreatedDate.HasValue && 
+                    DateTime.UtcNow.Subtract(result.CreatedDate.Value).TotalMinutes < 1)
+                {
+                    statusCode = StatusCodes.Status201Created;
+                    message = "Đơn vị tính được tạo thành công";
+                }
+
+                return StatusCode(
+                    statusCode,
+                    ApiResponse<DonViTinhsDto>.Success(
+                        data: result, 
+                        title: THONGBAO, 
+                        message: message
+                    )
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi thêm đơn vị tính")
+                );
+            }
+        }
+
+        /// <summary>
+        /// Thêm nhiều đơn vị tính một lúc
+        /// </summary>
+        [HttpPost("bulk-add")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<DonViTinhsDto>>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<IEnumerable<DonViTinhsDto>>>> BulkAdd(
+            [FromBody] IEnumerable<DonViTinhCreateDto> createDtos)
+        {
+            if (createDtos == null || !createDtos.Any())
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Dữ liệu đầu vào không hợp lệ hoặc trống"));
+
+            try
+            {
+                // Validate all DTOs first to prevent partial insertions
+                foreach (var dto in createDtos)
+                {
+                    var validation = await _donViTinhService.ValidateCreateAsync(dto);
+                    if (!validation.IsValid)
+                        return BadRequest(ApiResponse.BadRequest(THONGBAO, 
+                            $"Lỗi với đơn vị '{dto.Ten}': {validation.ErrorMessage}"));
+                }
+
+                var results = await _donViTinhService.BulkAddAsync(createDtos);
+                
+                return StatusCode(
+                    StatusCodes.Status201Created,
+                    ApiResponse<IEnumerable<DonViTinhsDto>>.Created(
+                        data: results,
+                        title: THONGBAO,
+                        message: $"Đã thêm thành công {results.Count()} đơn vị tính"
+                    )
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi thêm hàng loạt đơn vị tính")
+                );
+            }
+        }
+
+        /// <summary>
+        /// Tìm hoặc tạo nhiều đơn vị tính theo tên
+        /// </summary>
+        [HttpPost("get-or-create-by-names")]
+        [ProducesResponseType(typeof(ApiResponse<Dictionary<string, Guid>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<Dictionary<string, Guid>>>> GetOrCreateManyByNames(
+            [FromBody] List<string> tenDonViTinhs)
+        {
+            if (tenDonViTinhs == null || !tenDonViTinhs.Any())
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Danh sách tên đơn vị tính không được để trống"));
+
+            try
+            {
+                var result = await _donViTinhService.GetOrCreateManyByNameAsync(tenDonViTinhs);
+
+                return Ok(ApiResponse<Dictionary<string, Guid>>.Success(
+                    data: result,
+                    title: THONGBAO,
+                    message: $"Đã xử lý {result.Count} đơn vị tính thành công"
+                ));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi xử lý đơn vị tính")
+                );
+            }
+        }
+
     }
 }

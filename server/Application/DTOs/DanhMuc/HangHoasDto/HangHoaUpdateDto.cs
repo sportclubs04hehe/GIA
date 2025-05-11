@@ -14,7 +14,10 @@ namespace Application.DTOs.DanhMuc.HangHoasDto
         
         [StringLength(500)]
         public string? GhiChu { get; set; }
-        
+
+        [StringLength(500)]
+        public string? DacTinh { get; set; }
+
         [Required]
         public DateTime NgayHieuLuc { get; set; }
         

@@ -2,22 +2,22 @@
 using Application.Mappings;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Core.Entities.Domain.DanhMuc;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.ServiceImplement.DanhMuc
 {
     public class HangHoaService : IHangHoaService
     {
         private readonly IHangHoaRepository _hangHoaRepository;
+        private readonly IDonViTinhService _donViTinhService;
         private readonly IMapper _mapper;
 
-        public HangHoaService(IHangHoaRepository hangHoaRepository, IMapper mapper)
+        public HangHoaService(IHangHoaRepository hangHoaRepository, IDonViTinhService donViTinhService, IMapper mapper)
         {
             _hangHoaRepository = hangHoaRepository;
+            _donViTinhService = donViTinhService;
             _mapper = mapper;
         }
 
@@ -189,5 +189,114 @@ namespace Application.ServiceImplement.DanhMuc
             return (true, string.Empty);
         }
 
+        // Thêm phương thức implementation
+
+        public async Task<(bool IsSuccess, List<HangHoaDto> ImportedItems, List<string> Errors)> ImportFromExcelAsync(
+            List<HangHoaImportDto> importDtos)
+        {
+            var errors = new List<string>();
+            var createdEntities = new List<Dm_HangHoa>();
+            var importedItems = new List<HangHoaDto>();
+            
+            // Lấy tất cả tên đơn vị tính từ danh sách import để kiểm tra/tạo một lần
+            var donViTinhNames = importDtos.Select(x => x.DonViTinhTen.Trim())
+                                         .Distinct()
+                                         .Where(x => !string.IsNullOrWhiteSpace(x))
+                                         .ToList();
+                                         
+            // Dictionary để lưu trữ ánh xạ từ tên đơn vị tính đến ID
+            var donViTinhMapping = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+            
+            foreach (var tenDonViTinh in donViTinhNames)
+            {
+                try
+                {
+                    // Tìm hoặc tạo đơn vị tính
+                    var donViTinh = await _donViTinhService.AddIfNotExistsAsync(tenDonViTinh);
+                    if (donViTinh != null)
+                    {
+                        donViTinhMapping[tenDonViTinh] = donViTinh.Id;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Lỗi xử lý đơn vị tính '{tenDonViTinh}': {ex.Message}");
+                }
+            }
+            
+            // Xử lý từng hàng hóa
+            foreach (var importDto in importDtos)
+            {
+                try
+                {
+                    // Validate dữ liệu cơ bản
+                    if (string.IsNullOrWhiteSpace(importDto.MaMatHang))
+                    {
+                        errors.Add($"Hàng hóa '{importDto.TenMatHang}': Mã mặt hàng không được để trống");
+                        continue;
+                    }
+                    
+                    if (string.IsNullOrWhiteSpace(importDto.TenMatHang))
+                    {
+                        errors.Add($"Hàng hóa có mã '{importDto.MaMatHang}': Tên mặt hàng không được để trống");
+                        continue;
+                    }
+                    
+                    if (string.IsNullOrWhiteSpace(importDto.DonViTinhTen))
+                    {
+                        errors.Add($"Hàng hóa '{importDto.TenMatHang}': Đơn vị tính không được để trống");
+                        continue;
+                    }
+                    
+                    // Kiểm tra mã hàng hóa đã tồn tại chưa
+                    if (await _hangHoaRepository.ExistsByMaMatHangAsync(importDto.MaMatHang))
+                    {
+                        errors.Add($"Hàng hóa có mã '{importDto.MaMatHang}' đã tồn tại trong hệ thống");
+                        continue;
+                    }
+                    
+                    // Kiểm tra đơn vị tính đã được xử lý chưa
+                    if (!donViTinhMapping.TryGetValue(importDto.DonViTinhTen.Trim(), out var donViTinhId))
+                    {
+                        errors.Add($"Hàng hóa '{importDto.TenMatHang}': Không thể xác định đơn vị tính '{importDto.DonViTinhTen}'");
+                        continue;
+                    }
+                    
+                    var hangHoa = _mapper.Map<Dm_HangHoa>(importDto);
+                    
+                    // Gán DonViTinhId sau khi mapping
+                    hangHoa.DonViTinhId = donViTinhId;
+                    
+                    // Xử lý nhóm hàng hóa nếu cần
+                    if (!string.IsNullOrWhiteSpace(importDto.NhomHangHoaMa))
+                    {
+                        // Có thể thêm logic tìm NhomHangHoa theo mã ở đây
+                        // hangHoa.NhomHangHoaId = await FindNhomHangHoaByMaAsync(importDto.NhomHangHoaMa);
+                    }
+                    
+                    createdEntities.Add(hangHoa);
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Lỗi xử lý hàng hóa '{importDto.TenMatHang}': {ex.Message}");
+                }
+            }
+            
+            // Lưu tất cả hàng hóa hợp lệ vào database
+            if (createdEntities.Any())
+            {
+                try
+                {
+                    var savedEntities = await _hangHoaRepository.AddRangeAsync(createdEntities);
+                    importedItems = _mapper.Map<List<HangHoaDto>>(savedEntities);
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Lỗi khi lưu dữ liệu: {ex.Message}");
+                }
+            }
+            
+            return (errors.Count == 0, importedItems, errors);
+        }
     }
 }

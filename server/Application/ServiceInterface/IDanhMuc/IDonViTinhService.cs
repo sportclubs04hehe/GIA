@@ -18,5 +18,9 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<bool> ExistsAsync(Guid id);
         Task<bool> ExistsByMaAsync(string maMatHang, Guid? excludeId, CancellationToken cancellationToken = default);
         Task<(bool IsValid, string ErrorMessage)> ValidateCreateAsync(DonViTinhCreateDto dto);
+        Task<DonViTinhsDto> GetByTenAsync(string ten);
+        Task<DonViTinhsDto> AddIfNotExistsAsync(string ten);
+        Task<IEnumerable<DonViTinhsDto>> BulkAddAsync(IEnumerable<DonViTinhCreateDto> createDtos);
+        Task<Dictionary<string, Guid>> GetOrCreateManyByNameAsync(IEnumerable<string> tenDonViTinhs);
     }
 }

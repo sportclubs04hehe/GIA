@@ -19,5 +19,8 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         Task<Dm_DonViTinh> GetByMaAsync(string ma);
         Task<bool> IsMaUniqueAsync(string ma, Guid? id = null);
         Task<PagedList<Dm_DonViTinh>> SearchByNameAsync(SearchParams searchParams);
+        Task<Dm_DonViTinh?> GetByTenAsync(string ten);
+        Task<Dm_DonViTinh> AddIfNotExistsAsync(string ten);
+        Task<IEnumerable<Dm_DonViTinh>> BulkAddAsync(IEnumerable<Dm_DonViTinh> entities);
     }
 }

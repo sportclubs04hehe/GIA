@@ -21,6 +21,10 @@ namespace Application.DTOs.DanhMuc.HangHoasDto
         [Display(Name = "Ghi chú")]
         public string? GhiChu { get; set; }
 
+        [StringLength(500)]
+        [Display(Name = "Đặc Tính")]
+        public string? DacTinh { get; set; }
+
         [Required]
         [Display(Name = "Ngày hiệu lực")]
         [DataType(DataType.Date)]

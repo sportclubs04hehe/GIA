@@ -1,8 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Application.DTOs.DanhMuc.HangHoasDto
 {
-    public class HangHoaCreateDto : BaseDto
+    public class HangHoaImportDto
     {
         [Required(ErrorMessage = "Mã mặt hàng là bắt buộc")]
         [StringLength(50, ErrorMessage = "Mã mặt hàng không được vượt quá 50 ký tự")]
@@ -16,7 +17,7 @@ namespace Application.DTOs.DanhMuc.HangHoasDto
         public string? GhiChu { get; set; }
 
         [StringLength(500)]
-        public string? DacTinh { get; set; }
+        public string? dacTinh { get; set; }
 
         [Required(ErrorMessage = "Ngày hiệu lực là bắt buộc")]
         [DataType(DataType.Date)]
@@ -26,9 +27,9 @@ namespace Application.DTOs.DanhMuc.HangHoasDto
         [DataType(DataType.Date)]
         public DateTime NgayHetHieuLuc { get; set; }
 
-        public Guid? NhomHangHoaId { get; set; }
-
-        [Required(ErrorMessage = "Bạn phải chọn Đơn vị tính")]
-        public Guid DonViTinhId { get; set; }
+        public string? NhomHangHoaMa { get; set; }
+        
+        [Required(ErrorMessage = "Đơn vị tính là bắt buộc")]
+        public string DonViTinhTen { get; set; }
     }
 }

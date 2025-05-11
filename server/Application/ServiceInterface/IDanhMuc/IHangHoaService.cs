@@ -84,5 +84,8 @@ namespace Application.ServiceInterface.IDanhMuc
 
         Task<(bool IsValid, string ErrorMessage)> ValidateCreateHangHoaAsync(HangHoaCreateDto createDto);
         Task<(bool IsValid, string ErrorMessage)> ValidateUpdateHangHoaAsync(HangHoaUpdateDto updateDto);
+        // Thêm phương thức mới
+        Task<(bool IsSuccess, List<HangHoaDto> ImportedItems, List<string> Errors)> ImportFromExcelAsync(
+            List<HangHoaImportDto> importDtos);
     }
 }

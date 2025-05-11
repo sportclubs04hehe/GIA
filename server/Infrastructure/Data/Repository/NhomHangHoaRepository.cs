@@ -1,4 +1,5 @@
 ﻿using Core.Entities.Domain.DanhMuc;
+using Core.Entities.Domain.Enum;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
 using Core.Specifications;
@@ -189,6 +190,89 @@ namespace Infrastructure.Data.Repository
                 "createdDate" => isDescending ? query.OrderByDescending(x => x.CreatedDate) : query.OrderBy(x => x.CreatedDate),
                 _ => query.OrderBy(x => x.TenNhom)
             };
+        }
+
+        // Thêm các phương thức mới
+        
+        // 1. Lấy nhóm hàng hóa theo loại nhóm
+        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetByLoaiNhomAsync(LoaiNhom loaiNhom)
+        {
+            return await _dbSet
+                .Where(x => !x.IsDelete && x.LoaiNhom == loaiNhom)
+                .OrderBy(x => x.TenNhom)
+                .ToListAsync();
+        }
+
+        // 2. Lấy nhóm con theo loại nhóm
+        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetChildGroupsByLoaiNhomAsync(Guid parentId, LoaiNhom loaiNhom)
+        {
+            return await _dbSet
+                .Where(x => !x.IsDelete && x.NhomChaId == parentId && x.LoaiNhom == loaiNhom)
+                .OrderBy(x => x.TenNhom)
+                .ToListAsync();
+        }
+
+        // 3. Kiểm tra xem một nhóm có thể làm cha của một nhóm khác không
+        public async Task<bool> CanBeParentAsync(Guid parentId, LoaiNhom childLoaiNhom)
+        {
+            var parent = await GetByIdAsync(parentId);
+            if (parent == null) return false;
+            
+            // Nhóm phân loại luôn có thể làm cha
+            if (parent.LoaiNhom == LoaiNhom.NhomPhanLoai) return true;
+            
+            // Nhóm hàng hóa có thể làm cha của nhóm hàng hóa khác
+            return parent.LoaiNhom == LoaiNhom.HangHoa && childLoaiNhom == LoaiNhom.HangHoa;
+        }
+
+        // 4. Lấy cây phân cấp đầy đủ với thông tin loại nhóm
+        public async Task<List<Dm_NhomHangHoa>> GetHierarchyWithLoaiNhomAsync()
+        {
+            // Lấy tất cả nhóm gốc
+            var rootGroups = await GetRootGroupsAsync();
+            
+            // Đối với mỗi nhóm gốc, thực hiện truy vấn recursive để lấy con
+            foreach (var group in rootGroups)
+            {
+                await LoadChildrenRecursiveAsync(group);
+            }
+            
+            return rootGroups.ToList();
+        }
+        
+        private async Task LoadChildrenRecursiveAsync(Dm_NhomHangHoa parent)
+        {
+            // Lấy tất cả nhóm con trực tiếp
+            var children = await _dbSet
+                .Where(x => !x.IsDelete && x.NhomChaId == parent.Id)
+                .OrderBy(x => x.TenNhom)
+                .ToListAsync();
+                
+            if (children == null || !children.Any()) return;
+            
+            parent.NhomCon = children;
+            
+            // Đệ quy cho mỗi con
+            foreach (var child in children)
+            {
+                await LoadChildrenRecursiveAsync(child);
+            }
+        }
+
+        // 5. Kiểm tra xem một nhóm có đang được sử dụng làm nhóm cha không
+        public async Task<bool> IsParentOfAnyGroupAsync(Guid id)
+        {
+            return await _dbSet.AnyAsync(x => !x.IsDelete && x.NhomChaId == id);
+        }
+
+        // 6. Kiểm tra xem một nhóm có đang có hàng hóa không
+        public async Task<bool> HasProductsAsync(Guid id)
+        {
+            var nhomHangHoa = await _dbSet
+                .Include(x => x.HangHoas)
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDelete);
+                
+            return nhomHangHoa != null && nhomHangHoa.HangHoas != null && nhomHangHoa.HangHoas.Any(x => !x.IsDelete);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Core.Entities.Domain.Enum;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,7 @@ namespace Application.DTOs.DanhMuc.NhomHangHoasDto
     {
         public required string MaNhom { get; set; }
         public required string TenNhom { get; set; }
+        public LoaiNhom LoaiNhom { get; set; }
         public string? GhiChu { get; set; }
 
         // Cho phép gán nhóm cha nếu có

@@ -389,6 +389,42 @@ namespace server.Controllers.DanhMuc
         }
 
         /// <summary>
+        /// Kiểm tra danh sách mã mặt hàng đã tồn tại
+        /// </summary>
+        [HttpPost("check-existing-codes")]
+        [ProducesResponseType(typeof(Dictionary<string, bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<Dictionary<string, bool>>> CheckExistingCodes([FromBody] List<string> maCodes)
+        {
+            if (maCodes == null || !maCodes.Any())
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Danh sách mã cần kiểm tra không được để trống"));
+
+            try
+            {
+                var result = new Dictionary<string, bool>();
+
+                foreach (var maCode in maCodes)
+                {
+                    if (!string.IsNullOrWhiteSpace(maCode))
+                    {
+                        var exists = await _hangHoaService.ExistsByMaMatHangAsync(maCode);
+                        result[maCode] = exists;
+                    }
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking multiple product codes");
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Đã có lỗi khi kiểm tra mã mặt hàng ở hàng hóa thị trường")
+                );
+            }
+        }
+
+        /// <summary>
         /// Đếm số lượng hàng hóa trong hệ thống
         /// </summary>
         [HttpGet("count")]
@@ -405,6 +441,79 @@ namespace server.Controllers.DanhMuc
             {
                 _logger.LogError(ex, "Error counting products");
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while counting products");
+            }
+        }
+
+        /// <summary>
+        /// Import hàng hóa từ Excel
+        /// </summary>
+        [HttpPost("import-from-excel")]
+        [ProducesResponseType(typeof(ApiResponse<List<HangHoaDto>>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<HangHoaDto>>>> ImportFromExcel(
+            [FromBody] List<HangHoaImportDto> importDtos)
+        {
+            if (importDtos == null || !importDtos.Any())
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Danh sách hàng hóa không được để trống"));
+
+            try
+            {
+                var (isSuccess, importedItems, errors) = await _hangHoaService.ImportFromExcelAsync(importDtos);
+
+                if (!isSuccess && errors.Any())
+                {
+                    return BadRequest(
+                        ApiResponse<List<HangHoaDto>>.BadRequest(
+                            title: THONGBAO,
+                            message: "Có lỗi xảy ra khi import hàng hóa",
+                            errors: new
+                            {
+                                ErrorMessages = errors,
+                                SuccessfullyImported = importedItems.Count
+                            }
+                        )
+                    );
+                }
+
+                _logger.LogInformation("Import Excel successful. Total items: {Count}", importedItems.Count);
+
+                // Nếu có một số items thành công, một số lỗi, trả về 207 MultiStatus
+                if (errors.Any() && importedItems.Any())
+                {
+                    return StatusCode(
+                        StatusCodes.Status207MultiStatus,
+                        ApiResponse<List<HangHoaDto>>.PartialSuccess(
+                            data: importedItems,
+                            title: "Import thành công một phần",
+                            message: $"Đã import thành công {importedItems.Count} hàng hóa, {errors.Count} lỗi",
+                            errors: errors
+                        )
+                    );
+                }
+
+                // Trường hợp thành công hoàn toàn
+                return StatusCode(
+                    StatusCodes.Status201Created,
+                    ApiResponse<List<HangHoaDto>>.Created(
+                        data: importedItems,
+                        title: THONGBAO,
+                        message: $"Đã import thành công {importedItems.Count} hàng hóa"
+                    )
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(ex, "Invalid argument when importing products from Excel");
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error importing items from Excel");
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Đã có lỗi xảy ra khi import hàng hóa từ Excel")
+                );
             }
         }
     }

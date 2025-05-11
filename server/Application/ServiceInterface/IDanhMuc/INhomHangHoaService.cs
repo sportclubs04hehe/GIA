@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.DanhMuc.NhomHangHoasDto;
+using Core.Entities.Domain.Enum;
 using Core.Helpers;
 
 namespace Application.ServiceInterface.IDanhMuc
@@ -69,5 +70,14 @@ namespace Application.ServiceInterface.IDanhMuc
             /// Lấy cấu trúc phân cấp đầy đủ của nhóm hàng hóa.
             /// </summary>
             Task<List<NhomHangHoaDto>> GetHierarchyAsync();
-        }
+
+            // Thêm các phương thức mới
+            Task<List<NhomHangHoaDto>> GetByLoaiNhomAsync(LoaiNhom loaiNhom);
+            Task<List<NhomHangHoaDto>> GetChildGroupsByLoaiNhomAsync(Guid parentId, LoaiNhom loaiNhom);
+            Task<bool> CanBeParentAsync(Guid parentId, LoaiNhom childLoaiNhom);
+            Task<HierarchyDto> GetHierarchyWithLoaiNhomAsync();
+            Task<bool> IsParentOfAnyGroupAsync(Guid id);
+            Task<bool> HasProductsAsync(Guid id);
+
+    }
 }

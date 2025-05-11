@@ -51,6 +51,9 @@
         public static ApiResponse<T> Success(T data, string? title = null, string? message = null)
             => new(200, title ?? "Success", message, data);
 
+        public static ApiResponse<T> PartialSuccess(T data, string? title = null, string? message = null, object? errors = null)
+            => new(207, title ?? "Partial Success", message, data, errors);
+
         public static ApiResponse<T> Created(T data, string? title = null, string? message = null)
             => new(201, title ?? "Created", message, data);
 

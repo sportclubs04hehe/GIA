@@ -1,4 +1,5 @@
-﻿using Core.Entities.IdentityBase;
+﻿using Core.Entities.Domain.Enum;
+using Core.Entities.IdentityBase;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Core.Entities.Domain.DanhMuc
@@ -9,17 +10,12 @@ namespace Core.Entities.Domain.DanhMuc
         public required string MaNhom { get; set; }
         public required string TenNhom { get; set; }
         public string? GhiChu { get; set; }
-
-        // 🔁 Cha của nhóm này
+        public LoaiNhom LoaiNhom { get; set; } = LoaiNhom.NhomPhanLoai;
         public Guid? NhomChaId { get; set; }
 
         [ForeignKey("NhomChaId")]
         public virtual Dm_NhomHangHoa NhomCha { get; set; }
-
-        // 🔁 Các nhóm con trực tiếp
         public virtual ICollection<Dm_NhomHangHoa> NhomCon { get; set; }
-
-        // 🔗 Hàng hóa trong nhóm
         public virtual ICollection<Dm_HangHoa> HangHoas { get; set; }
     }
 }

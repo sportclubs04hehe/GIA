@@ -5,6 +5,7 @@ using AutoMapper;
 using Core.Entities.Domain.DanhMuc;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Application.ServiceImplement.DanhMuc
@@ -166,6 +167,117 @@ namespace Application.ServiceImplement.DanhMuc
         {
             var donViTinhDto = _mapper.Map<DonViTinhsDto>(dto);
             return await ValidateHangHoaAsync(donViTinhDto);
+        }
+
+        public async Task<DonViTinhsDto> GetByTenAsync(string ten)
+        {
+            if (string.IsNullOrWhiteSpace(ten))
+                throw new ArgumentException("Tên không được để trống", nameof(ten));
+                
+            var entity = await _repository.GetByTenAsync(ten);
+            return _mapper.Map<DonViTinhsDto>(entity);
+        }
+
+        public async Task<DonViTinhsDto> AddIfNotExistsAsync(string ten)
+        {
+            if (string.IsNullOrWhiteSpace(ten))
+                throw new ArgumentException("Tên không được để trống", nameof(ten));
+                
+            var entity = await _repository.AddIfNotExistsAsync(ten);
+            return _mapper.Map<DonViTinhsDto>(entity);
+        }
+
+        public async Task<IEnumerable<DonViTinhsDto>> BulkAddAsync(IEnumerable<DonViTinhCreateDto> createDtos)
+        {
+            if (createDtos == null)
+                throw new ArgumentNullException(nameof(createDtos));
+            
+            // Convert DTOs to entities
+            var entities = _mapper.Map<IEnumerable<Dm_DonViTinh>>(createDtos).ToList();
+            
+            // Use the repository method to add them efficiently
+            var addedEntities = await _repository.BulkAddAsync(entities);
+            
+            // Map back to DTOs for the response
+            return _mapper.Map<IEnumerable<DonViTinhsDto>>(addedEntities);
+        }
+
+        // Thêm phương thức implementation
+
+        public async Task<Dictionary<string, Guid>> GetOrCreateManyByNameAsync(IEnumerable<string> tenDonViTinhs)
+        {
+            if (tenDonViTinhs == null)
+                throw new ArgumentNullException(nameof(tenDonViTinhs));
+                
+            var result = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+            var distinctNames = tenDonViTinhs
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .Distinct()
+                .ToList();
+                
+            if (!distinctNames.Any())
+                return result;
+            
+            // Trước tiên, tìm những đơn vị tính đã tồn tại
+            var existingEntities = await _repository.GetActive()
+                .Where(d => distinctNames.Contains(d.Ten))
+                .ToListAsync();
+            
+            foreach (var entity in existingEntities)
+            {
+                result[entity.Ten] = entity.Id;
+            }
+            
+            // Tìm những tên đơn vị tính chưa tồn tại
+            var missingNames = distinctNames
+                .Where(name => !result.ContainsKey(name))
+                .ToList();
+            
+            if (missingNames.Any())
+            {
+                // Tạo các đơn vị tính mới
+                var newEntities = missingNames.Select(name => new Dm_DonViTinh
+                {
+                    Id = Guid.NewGuid(),
+                    Ten = name,
+                    Ma = GenerateCodeFromName(name),
+                    NgayHieuLuc = DateTime.UtcNow, // Sử dụng UTC
+                    NgayHetHieuLuc = DateTime.UtcNow.AddYears(10), // Sử dụng UTC
+                    CreatedDate = DateTime.UtcNow, // Sử dụng UTC
+                    IsDelete = false
+                }).ToList();
+                
+                try {
+                    var createdEntities = await _repository.BulkAddAsync(newEntities);
+                    
+                    foreach (var entity in createdEntities)
+                    {
+                        result[entity.Ten] = entity.Id;
+                    }
+                } catch (Exception ex) {
+                    throw new Exception($"Lỗi khi lưu đơn vị tính: {ex.Message}", ex);
+                }
+            }
+            
+            return result;
+        }
+
+        private string GenerateCodeFromName(string name)
+        {
+            // Tạo mã từ chữ cái đầu của mỗi từ trong tên
+            if (string.IsNullOrWhiteSpace(name))
+                return "DVT" + Guid.NewGuid().ToString().Substring(0, 4);
+                
+            var words = name.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            // Fix: Use string.Join (capital J) instead of string.join
+            var code = string.Join("", words.Select(w => w.Length > 0 ? w[0].ToString().ToUpper() : ""));
+            
+            // Nếu mã quá ngắn, thêm "DVT" ở đầu
+            if (code.Length < 2)
+                code = "DVT" + code;
+                
+            return code.Length > 20 ? code.Substring(0, 20) : code;
         }
     }
 }

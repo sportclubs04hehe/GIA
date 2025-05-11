@@ -1,4 +1,5 @@
 ﻿using Core.Entities.Domain.DanhMuc;
+using Core.Entities.Domain.Enum;
 using Core.Helpers;
 using Core.Interfaces.IGeneric;
 using Core.Specifications;
@@ -28,5 +29,13 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         
         // Additional filtering methods
         Task<PagedList<Dm_NhomHangHoa>> GetFilteredAsync(SpecificationParams specParams);
+
+        // AI
+        Task<IReadOnlyList<Dm_NhomHangHoa>> GetByLoaiNhomAsync(LoaiNhom loaiNhom);
+        Task<IReadOnlyList<Dm_NhomHangHoa>> GetChildGroupsByLoaiNhomAsync(Guid parentId, LoaiNhom loaiNhom);
+        Task<bool> CanBeParentAsync(Guid parentId, LoaiNhom childLoaiNhom);
+        Task<List<Dm_NhomHangHoa>> GetHierarchyWithLoaiNhomAsync();
+        Task<bool> IsParentOfAnyGroupAsync(Guid id);
+        Task<bool> HasProductsAsync(Guid id);
     }
 }
