@@ -1,278 +1,134 @@
 ﻿using Core.Entities.Domain.DanhMuc;
-using Core.Entities.Domain.Enum;
-using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
-using Core.Specifications;
 using Infrastructure.Data.Generic;
 using Microsoft.EntityFrameworkCore;
+using Core.Helpers;
+using System.Linq.Expressions;
 
 namespace Infrastructure.Data.Repository
 {
     public class NhomHangHoaRepository : GenericRepository<Dm_NhomHangHoa>, INhomHangHoaRepository
     {
+        private readonly StoreContext _storeContext;
+
         public NhomHangHoaRepository(StoreContext context) : base(context)
         {
-
+            _storeContext = context;
         }
 
-        // Only implementing methods not in the base class
-        public async Task<Dm_NhomHangHoa?> GetByMaNhomAsync(string maNhom)
-        {
-            return await _dbSet
-                .FirstOrDefaultAsync(x => x.MaNhom == maNhom && !x.IsDelete);
-        }
-
-        public async Task<bool> ExistsByMaNhomAsync(string maNhom)
-        {
-            return await _dbSet.AnyAsync(x => x.MaNhom == maNhom && !x.IsDelete);
-        }
-
-        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetRootGroupsAsync()
+        public async Task<List<Dm_NhomHangHoa>> GetRootNodesAsync()
         {
             return await _dbSet
                 .Where(x => !x.IsDelete && x.NhomChaId == null)
-                .OrderBy(x => x.TenNhom)
+                .OrderBy(x => x.MaNhom)
                 .ToListAsync();
         }
 
-        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetChildGroupsAsync(Guid parentId)
+        protected override IQueryable<Dm_NhomHangHoa> IncludeRelations(IQueryable<Dm_NhomHangHoa> query)
+        {
+            return query.Include(x => x.NhomCha);
+        }
+
+        public async Task<bool> IsMaNhomExistsInSameParentAsync(string maNhom, Guid? parentId, Guid? excludeId = null)
+        {
+            var query = _dbSet.Where(x => !x.IsDelete && x.MaNhom == maNhom && x.NhomChaId == parentId);
+            
+            if (excludeId.HasValue)
+                query = query.Where(x => x.Id != excludeId.Value);
+                
+            return await query.AnyAsync();
+        }
+
+        public async Task<List<Dm_NhomHangHoa>> GetChildGroupsAsync(Guid parentId)
         {
             return await _dbSet
                 .Where(x => !x.IsDelete && x.NhomChaId == parentId)
-                .OrderBy(x => x.TenNhom)
                 .ToListAsync();
         }
 
-        public async Task<PagedList<Dm_NhomHangHoa>> GetFilteredAsync(SpecificationParams specParams)
+        public async Task<List<Dm_NhomHangHoa>> GetAllDescendantsAsync(Guid parentId)
         {
-            var query = _dbSet
-                .Where(x => !x.IsDelete)
-                .AsQueryable();
-
-            // Apply search filter
-            if (!string.IsNullOrEmpty(specParams.SearchTerm))
+            var result = new List<Dm_NhomHangHoa>();
+            var directChildren = await GetChildGroupsAsync(parentId);
+            
+            if (!directChildren.Any())
+                return result;
+                
+            result.AddRange(directChildren);
+            
+            foreach (var child in directChildren)
             {
-                var searchTerm = specParams.SearchTerm.ToLower();
-                query = query.Where(x => 
-                    x.TenNhom.ToLower().Contains(searchTerm) || 
-                    x.MaNhom.ToLower().Contains(searchTerm));
+                var descendants = await GetAllDescendantsAsync(child.Id);
+                result.AddRange(descendants);
             }
-
-            // Apply sorting
-            if (!string.IsNullOrEmpty(specParams.SortBy))
-            {
-                query = ApplySorting(query, specParams.SortBy, specParams.IsDescending);
-            }
-            else
-            {
-                // Default sort by name
-                query = query.OrderBy(x => x.TenNhom);
-            }
-
-            return await PagedList<Dm_NhomHangHoa>.CreateAsync(
-                query, 
-                specParams.PageIndex, 
-                specParams.PageSize);
+            
+            return result;
         }
 
-        public async Task<Dm_NhomHangHoa> GetWithChildrenAsync(Guid id, int levels = 1)
+        public async Task<PagedList<Dm_HangHoa>> GetAllProductsInGroupAsync(Guid groupId, PaginationParams paginationParams)
         {
-            var query = _dbSet
-                .Where(x => x.Id == id && !x.IsDelete)
-                .AsQueryable();
-
-            // Include children recursively based on levels
-            for (int i = 0; i < levels; i++)
-            {
-                query = IncludeChildrenLevel(query, i);
-            }
-
-            return await query.FirstOrDefaultAsync();
-        }
-
-        public async Task<Dm_NhomHangHoa> GetWithProductsAsync(Guid id)
-        {
-            return await _dbSet
-                .Where(x => x.Id == id && !x.IsDelete)
-                .Include(x => x.HangHoas.Where(h => !h.IsDelete))
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<Dm_NhomHangHoa> GetSingleBySpecAsync(ISpecification<Dm_NhomHangHoa> spec)
-        {
-            return await ApplySpecification(spec).FirstOrDefaultAsync();
-        }
-
-        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetListBySpecAsync(ISpecification<Dm_NhomHangHoa> spec)
-        {
-            return await ApplySpecification(spec).ToListAsync();
-        }
-
-        public async Task<PagedList<Dm_NhomHangHoa>> GetPagedBySpecAsync(ISpecification<Dm_NhomHangHoa> spec, PaginationParams paginationParams)
-        {
-            var query = ApplySpecification(spec);
-            return await PagedList<Dm_NhomHangHoa>.CreateAsync(query, paginationParams.PageIndex, paginationParams.PageSize);
-        }
-
-        public async Task<int> CountAsync(ISpecification<Dm_NhomHangHoa> spec)
-        {
-            return await ApplySpecification(spec).CountAsync();
-        }
-
-        public override async Task<PagedList<Dm_NhomHangHoa>> GetAllAsync(PaginationParams paginationParams)
-        {
-            // Apply default ordering before pagination
-            var query = _dbSet
-                .Where(x => !x.IsDelete)
-                .OrderBy(x => x.TenNhom); 
-
-            return await PagedList<Dm_NhomHangHoa>.CreateAsync(
+            // Lấy tất cả nhóm con (bao gồm nhóm hiện tại)
+            var allGroupIds = new List<Guid> { groupId };
+            var childGroups = await GetAllDescendantsAsync(groupId);
+            allGroupIds.AddRange(childGroups.Select(g => g.Id));
+            
+            // Lấy hàng hóa từ tất cả nhóm
+            var query = _storeContext.HangHoas
+                .Where(p => !p.IsDelete && allGroupIds.Contains(p.NhomHangHoaId.Value))
+                .OrderByDescending(p => p.CreatedDate);
+                
+            return await PagedList<Dm_HangHoa>.CreateAsync(
                 query,
                 paginationParams.PageIndex,
                 paginationParams.PageSize);
         }
 
-        // Helper methods
-        private IQueryable<Dm_NhomHangHoa> ApplySpecification(ISpecification<Dm_NhomHangHoa> spec)
+        public async Task<bool> DeleteGroupWithRelatedEntitiesAsync(Guid groupId)
         {
-            var query = _dbSet.Where(x => !x.IsDelete).AsQueryable();
+            using var transaction = await _storeContext.Database.BeginTransactionAsync();
             
-            // Apply criteria
-            if (spec.Criteria != null)
+            try
             {
-                query = query.Where(spec.Criteria);
-            }
-            
-            // Apply includes
-            query = spec.Includes.Aggregate(query, (current, include) => current.Include(include));
-            
-            // Apply ordering
-            if (spec.OrderBy != null)
-            {
-                query = query.OrderBy(spec.OrderBy);
-            }
-            else if (spec.OrderByDescending != null)
-            {
-                query = query.OrderByDescending(spec.OrderByDescending);
-            }
-            
-            // Apply paging
-            if (spec.IsPagingEnabled)
-            {
-                query = query.Skip(spec.Skip).Take(spec.Take);
-            }
-            
-            return query;
-        }
-
-        private IQueryable<Dm_NhomHangHoa> IncludeChildrenLevel(IQueryable<Dm_NhomHangHoa> query, int level)
-        {
-            if (level == 0)
-            {
-                return query.Include(x => x.NhomCon.Where(c => !c.IsDelete));
-            }
-            
-            string includePath = "NhomCon";
-            for (int i = 0; i < level; i++)
-            {
-                includePath += ".NhomCon";
-            }
-            
-            return query.Include(includePath);
-        }
-
-        private IQueryable<Dm_NhomHangHoa> ApplySorting(IQueryable<Dm_NhomHangHoa> query, string sortBy, bool isDescending)
-        {
-            return sortBy.ToLower() switch
-            {
-                "maNhom" => isDescending ? query.OrderByDescending(x => x.MaNhom) : query.OrderBy(x => x.MaNhom),
-                "tenNhom" => isDescending ? query.OrderByDescending(x => x.TenNhom) : query.OrderBy(x => x.TenNhom),
-                "createdDate" => isDescending ? query.OrderByDescending(x => x.CreatedDate) : query.OrderBy(x => x.CreatedDate),
-                _ => query.OrderBy(x => x.TenNhom)
-            };
-        }
-
-        // Thêm các phương thức mới
-        
-        // 1. Lấy nhóm hàng hóa theo loại nhóm
-        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetByLoaiNhomAsync(LoaiNhom loaiNhom)
-        {
-            return await _dbSet
-                .Where(x => !x.IsDelete && x.LoaiNhom == loaiNhom)
-                .OrderBy(x => x.TenNhom)
-                .ToListAsync();
-        }
-
-        // 2. Lấy nhóm con theo loại nhóm
-        public async Task<IReadOnlyList<Dm_NhomHangHoa>> GetChildGroupsByLoaiNhomAsync(Guid parentId, LoaiNhom loaiNhom)
-        {
-            return await _dbSet
-                .Where(x => !x.IsDelete && x.NhomChaId == parentId && x.LoaiNhom == loaiNhom)
-                .OrderBy(x => x.TenNhom)
-                .ToListAsync();
-        }
-
-        // 3. Kiểm tra xem một nhóm có thể làm cha của một nhóm khác không
-        public async Task<bool> CanBeParentAsync(Guid parentId, LoaiNhom childLoaiNhom)
-        {
-            var parent = await GetByIdAsync(parentId);
-            if (parent == null) return false;
-            
-            // Nhóm phân loại luôn có thể làm cha
-            if (parent.LoaiNhom == LoaiNhom.NhomPhanLoai) return true;
-            
-            // Nhóm hàng hóa có thể làm cha của nhóm hàng hóa khác
-            return parent.LoaiNhom == LoaiNhom.HangHoa && childLoaiNhom == LoaiNhom.HangHoa;
-        }
-
-        // 4. Lấy cây phân cấp đầy đủ với thông tin loại nhóm
-        public async Task<List<Dm_NhomHangHoa>> GetHierarchyWithLoaiNhomAsync()
-        {
-            // Lấy tất cả nhóm gốc
-            var rootGroups = await GetRootGroupsAsync();
-            
-            // Đối với mỗi nhóm gốc, thực hiện truy vấn recursive để lấy con
-            foreach (var group in rootGroups)
-            {
-                await LoadChildrenRecursiveAsync(group);
-            }
-            
-            return rootGroups.ToList();
-        }
-        
-        private async Task LoadChildrenRecursiveAsync(Dm_NhomHangHoa parent)
-        {
-            // Lấy tất cả nhóm con trực tiếp
-            var children = await _dbSet
-                .Where(x => !x.IsDelete && x.NhomChaId == parent.Id)
-                .OrderBy(x => x.TenNhom)
-                .ToListAsync();
+                // 1. Xác định tất cả các nhóm con
+                var allChildGroups = await GetAllDescendantsAsync(groupId);
+                var allGroupIds = new List<Guid> { groupId };
+                allGroupIds.AddRange(allChildGroups.Select(g => g.Id));
                 
-            if (children == null || !children.Any()) return;
-            
-            parent.NhomCon = children;
-            
-            // Đệ quy cho mỗi con
-            foreach (var child in children)
-            {
-                await LoadChildrenRecursiveAsync(child);
-            }
-        }
-
-        // 5. Kiểm tra xem một nhóm có đang được sử dụng làm nhóm cha không
-        public async Task<bool> IsParentOfAnyGroupAsync(Guid id)
-        {
-            return await _dbSet.AnyAsync(x => !x.IsDelete && x.NhomChaId == id);
-        }
-
-        // 6. Kiểm tra xem một nhóm có đang có hàng hóa không
-        public async Task<bool> HasProductsAsync(Guid id)
-        {
-            var nhomHangHoa = await _dbSet
-                .Include(x => x.HangHoas)
-                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDelete);
+                // 2. Đánh dấu xóa tất cả hàng hóa trong các nhóm
+                var relatedProducts = await _storeContext.HangHoas
+                    .Where(p => !p.IsDelete && allGroupIds.Contains(p.NhomHangHoaId.Value))
+                    .ToListAsync();
+                    
+                foreach (var product in relatedProducts)
+                {
+                    product.IsDelete = true;
+                    product.ModifiedDate = DateTime.UtcNow;
+                }
                 
-            return nhomHangHoa != null && nhomHangHoa.HangHoas != null && nhomHangHoa.HangHoas.Any(x => !x.IsDelete);
+                // 3. Đánh dấu xóa tất cả nhóm con (từ sâu đến nông)
+                foreach (var childGroup in allChildGroups.OrderByDescending(g => g.NhomCon.Count))
+                {
+                    childGroup.IsDelete = true;
+                    childGroup.ModifiedDate = DateTime.UtcNow;
+                }
+                
+                // 4. Cuối cùng đánh dấu xóa nhóm cha
+                var mainGroup = await _dbSet.FindAsync(groupId);
+                if (mainGroup != null)
+                {
+                    mainGroup.IsDelete = true;
+                    mainGroup.ModifiedDate = DateTime.UtcNow;
+                }
+                
+                await _storeContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
         }
     }
 }

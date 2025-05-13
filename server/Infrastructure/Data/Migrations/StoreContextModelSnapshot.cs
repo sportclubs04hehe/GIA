@@ -89,6 +89,9 @@ namespace Infrastructure.Data.Migrations
                     b.Property<bool>("IsDelete")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsHangHoa")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("MaMatHang")
                         .IsRequired()
                         .HasColumnType("text");
@@ -139,9 +142,6 @@ namespace Infrastructure.Data.Migrations
                     b.Property<bool>("IsDelete")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("LoaiNhom")
-                        .HasColumnType("integer");
-
                     b.Property<string>("MaNhom")
                         .IsRequired()
                         .HasColumnType("text");
@@ -150,6 +150,12 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NgayHetHieuLuc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NgayHieuLuc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("NhomChaId")

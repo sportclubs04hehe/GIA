@@ -1,9 +1,8 @@
-﻿using Application.DTOs.DanhMuc.NhomHangHoasDto;
-using Application.Mappings;
+﻿using Application.DTOs.DanhMuc.HangHoasDto;
+using Application.DTOs.DanhMuc.NhomHangHoasDto;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
 using Core.Entities.Domain.DanhMuc;
-using Core.Entities.Domain.Enum;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
 
@@ -16,282 +15,146 @@ namespace Application.ServiceImplement.DanhMuc
 
         public NhomHangHoaService(INhomHangHoaRepository repository, IMapper mapper)
         {
-            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _repository = repository;
+            _mapper = mapper;
         }
 
-        public async Task<PagedList<NhomHangHoaDto>> GetAllAsync(PaginationParams paginationParams)
+        public async Task<NhomHangHoaDto> CreateNhomHangHoaAsync(CreateNhomHangHoaDto createDto)
         {
-            // Get paged data
-            var pagedData = await _repository.GetAllAsync(paginationParams);
-
-            // Map to DTOs using extension method
-            return pagedData.MapTo<Dm_NhomHangHoa, NhomHangHoaDto>(_mapper);
-        }
-
-        public async Task<NhomHangHoaDto> AddAsync(CreateNhomHangHoaDto createNhomHangHoaDto)
-        {
-            // Kiểm tra mã nhóm đã tồn tại chưa
-            if (await _repository.ExistsByMaNhomAsync(createNhomHangHoaDto.MaNhom))
+            // Kiểm tra mã nhóm trùng lặp trong cùng nhóm cha
+            if (await _repository.IsMaNhomExistsInSameParentAsync(createDto.MaNhom, createDto.NhomChaId))
             {
-                throw new Exception($"Mã nhóm '{createNhomHangHoaDto.MaNhom}' đã tồn tại");
+                throw new Exception($"Mã nhóm '{createDto.MaNhom}' đã tồn tại trong cùng nhóm cha");
             }
-
-            // Kiểm tra quan hệ cha-con hợp lệ nếu có nhóm cha
-            if (createNhomHangHoaDto.NhomChaId.HasValue)
-            {
-                var parentId = createNhomHangHoaDto.NhomChaId.Value;
-                
-                // Kiểm tra nhóm cha tồn tại
-                if (!await _repository.ExistsAsync(parentId))
-                {
-                    throw new Exception($"Nhóm cha với ID: {parentId} không tồn tại");
-                }
-                
-                // Kiểm tra nhóm cha có thể làm cha của loại nhóm này không
-                if (!await _repository.CanBeParentAsync(parentId, createNhomHangHoaDto.LoaiNhom))
-                {
-                    throw new Exception("Nhóm cha không thể chứa loại nhóm con này");
-                }
-            }
-
-            // Map to entity
-            var entity = _mapper.Map<Dm_NhomHangHoa>(createNhomHangHoaDto);
             
-            // Add to repository
-            var result = await _repository.AddAsync(entity);
+            var entity = _mapper.Map<Dm_NhomHangHoa>(createDto);
+            await _repository.AddAsync(entity);
             
-            // Map back to DTO and return
-            return _mapper.Map<NhomHangHoaDto>(result);
+            return _mapper.Map<NhomHangHoaDto>(entity);
         }
 
-        public async Task<bool> UpdateAsync(UpdateNhomHangHoaDto updateNhomHangHoaDto)
+        public async Task<NhomHangHoaDto> UpdateNhomHangHoaAsync(Guid id, UpdateNhomHangHoaDto updateDto)
         {
-            // Kiểm tra tồn tại
-            if (!await _repository.ExistsAsync(updateNhomHangHoaDto.Id))
-            {
-                throw new Exception($"Nhóm hàng hóa với ID: {updateNhomHangHoaDto.Id} không tồn tại");
-            }
-
-            // Kiểm tra mã nhóm đã tồn tại chưa
-            var existingEntity = await _repository.GetByMaNhomAsync(updateNhomHangHoaDto.MaNhom);
-            if (existingEntity != null && existingEntity.Id != updateNhomHangHoaDto.Id)
-            {
-                throw new Exception($"Mã nhóm '{updateNhomHangHoaDto.MaNhom}' đã được sử dụng bởi nhóm khác");
-            }
-
-            // Kiểm tra quan hệ cha-con hợp lệ nếu có nhóm cha
-            if (updateNhomHangHoaDto.NhomChaId.HasValue)
-            {
-                var parentId = updateNhomHangHoaDto.NhomChaId.Value;
-                
-                // Không thể gán chính nó làm cha
-                if (parentId == updateNhomHangHoaDto.Id)
-                {
-                    throw new Exception("Không thể gán nhóm làm cha của chính nó");
-                }
-                
-                // Kiểm tra nhóm cha tồn tại
-                if (!await _repository.ExistsAsync(parentId))
-                {
-                    throw new Exception($"Nhóm cha với ID: {parentId} không tồn tại");
-                }
-                
-                // Kiểm tra nhóm cha có thể làm cha của loại nhóm này không
-                if (!await _repository.CanBeParentAsync(parentId, updateNhomHangHoaDto.LoaiNhom))
-                {
-                    throw new Exception("Nhóm cha không thể chứa loại nhóm con này");
-                }
-                
-                // Kiểm tra không tạo chu trình
-                await CheckForCycles(updateNhomHangHoaDto.Id, parentId);
-            }
-
-            // Map to entity
-            var entity = _mapper.Map<Dm_NhomHangHoa>(updateNhomHangHoaDto);
-
-            // Update and return result
-            return await _repository.UpdateAsync(entity);
-        }
-
-        // Kiểm tra chu trình trong cây phân cấp
-        private async Task CheckForCycles(Guid childId, Guid parentId)
-        {
-            // Kiểm tra nếu nhóm con là cha của nhóm cha (trực tiếp hoặc gián tiếp)
-            var currentId = parentId;
-            var visitedIds = new HashSet<Guid>();
+            var existingEntity = await _repository.GetByIdAsync(id);
+            if (existingEntity == null)
+                throw new Exception($"Nhóm hàng hóa với ID {id} không tồn tại");
             
-            while (currentId != Guid.Empty && !visitedIds.Contains(currentId))
+            _mapper.Map(updateDto, existingEntity);
+            
+            var success = await _repository.UpdateAsync(existingEntity);
+
+            if (!success)
             {
-                visitedIds.Add(currentId);
-                
-                var parent = await _repository.GetByIdAsync(currentId);
-                if (parent == null) break;
-                
-                if (parent.NhomChaId == childId)
-                {
-                    throw new Exception("Không thể tạo chu trình trong cấu trúc phân cấp");
-                }
-                
-                currentId = parent.NhomChaId ?? Guid.Empty;
+                var refreshedEntity = await _repository.GetByIdAsync(id);
             }
+            
+            return _mapper.Map<NhomHangHoaDto>(existingEntity);
         }
 
-        public async Task<bool> DeleteAsync(Guid id)
+        public async Task<List<NhomHangHoaDto>> GetRootNodesAsync()
         {
-            // Check if exists
-            if (!await _repository.ExistsAsync(id))
-            {
-                throw new Exception($"Product group with ID: {id} not found");
-            }
-
-            // Delete
-            return await _repository.DeleteAsync(id);
+            var rootNodes = await _repository.GetRootNodesAsync();
+            return _mapper.Map<List<NhomHangHoaDto>>(rootNodes);
         }
 
-        public async Task<bool> ExistsAsync(Guid id)
+        public async Task<bool> DeleteNhomHangHoaAsync(Guid id)
         {
-            return await _repository.ExistsAsync(id);
+            return await _repository.DeleteGroupWithRelatedEntitiesAsync(id);
         }
 
-        public async Task<bool> ExistsByMaNhomAsync(string maNhom)
+        public async Task<NhomHangHoaDto> GetNhomHangHoaByIdAsync(Guid id)
         {
-            return await _repository.ExistsByMaNhomAsync(maNhom);
-        }
-
-        public async Task<NhomHangHoaDto> GetByIdAsync(Guid id)
-        {
-            // Get entity
             var entity = await _repository.GetByIdAsync(id);
+            return entity != null ? _mapper.Map<NhomHangHoaDto>(entity) : null;
+        }
+
+        public async Task<PagedList<NhomHangHoaDto>> GetAllNhomHangHoasAsync(PaginationParams paginationParams)
+        {
+            var entitiesPage = await _repository.GetAllAsync(paginationParams);
             
+            var dtos = _mapper.Map<List<NhomHangHoaDto>>(entitiesPage);
+            
+            return new PagedList<NhomHangHoaDto>(
+                dtos,
+                entitiesPage.TotalCount,
+                entitiesPage.CurrentPage,
+                entitiesPage.PageSize);
+        }
+
+        public async Task<PagedList<NhomHangHoaDto>> SearchNhomHangHoasAsync(SearchParams searchParams)
+        {
+            var entitiesPage = await _repository.SearchAsync(
+                searchParams,
+                x => x.MaNhom,
+                x => x.TenNhom);
+                
+            var dtos = _mapper.Map<List<NhomHangHoaDto>>(entitiesPage);
+            
+            return new PagedList<NhomHangHoaDto>(
+                dtos,
+                entitiesPage.TotalCount,
+                entitiesPage.CurrentPage,
+                entitiesPage.PageSize);
+        }
+
+        public async Task<List<NhomHangHoaDto>> GetChildNhomHangHoasAsync(Guid parentId)
+        {
+            var children = await _repository.GetChildGroupsAsync(parentId);
+            return _mapper.Map<List<NhomHangHoaDto>>(children);
+        }
+
+        public async Task<NhomHangHoaDetailDto> GetNhomHangHoaWithChildrenAsync(Guid id)
+        {
+            var entity = await _repository.GetByIdAsync(id);
             if (entity == null)
+                return null;
+
+            var detailDto = _mapper.Map<NhomHangHoaDetailDto>(entity);
+
+            // Load direct children
+            var children = await _repository.GetChildGroupsAsync(id);
+            var childrenDtos = _mapper.Map<List<NhomHangHoaDto>>(children);
+            
+            // For each child, recursively load its children
+            foreach (var childDto in childrenDtos)
             {
-                throw new Exception($"Product group with ID: {id} not found");
+                await LoadChildrenRecursivelyAsync(childDto);
             }
             
-            // Map to DTO and return
-            return _mapper.Map<NhomHangHoaDto>(entity);
+            detailDto.NhomCon = childrenDtos;
+            return detailDto;
         }
 
-        public async Task<NhomHangHoaDto> GetByMaNhomAsync(string maNhom)
+        // New helper method to recursively load the tree
+        public async Task LoadChildrenRecursivelyAsync(NhomHangHoaDto parentDto)
         {
-            // Get entity
-            var entity = await _repository.GetByMaNhomAsync(maNhom);
+            if (parentDto == null || parentDto.Id == Guid.Empty)
+                return;
+                
+            // Change this line - don't parse the Id, it's already a Guid
+            var children = await _repository.GetChildGroupsAsync(parentDto.Id);
+            var childrenDtos = _mapper.Map<List<NhomHangHoaDto>>(children);
             
-            if (entity == null)
+            parentDto.NhomCon = childrenDtos;
+            
+            // Recursively load children for each child
+            foreach (var childDto in childrenDtos)
             {
-                throw new Exception($"No product group found with group code: {maNhom}");
+                await LoadChildrenRecursivelyAsync(childDto);
             }
-            
-            // Map to DTO and return
-            return _mapper.Map<NhomHangHoaDto>(entity);
         }
 
-        public async Task<List<NhomHangHoaDto>> GetChildGroupsAsync(Guid parentId)
+        public async Task<PagedList<HangHoaDto>> GetAllProductsInGroupAsync(Guid groupId, PaginationParams paginationParams)
         {
-            // Check if parent exists
-            if (!await _repository.ExistsAsync(parentId))
-            {
-                throw new Exception($"No parent product group found with ID: {parentId}");
-            }
+            var productsPage = await _repository.GetAllProductsInGroupAsync(groupId, paginationParams);
             
-            // Get child groups
-            var entities = await _repository.GetChildGroupsAsync(parentId);
+            var dtos = _mapper.Map<List<HangHoaDto>>(productsPage);
             
-            // Map to DTOs and return
-            return _mapper.Map<List<NhomHangHoaDto>>(entities);
-        }
-
-        public async Task<List<NhomHangHoaDto>> GetHierarchyAsync()
-        {
-            // Start with root groups
-            var rootGroups = await _repository.GetRootGroupsAsync();
-            
-            // Map to DTOs
-            var result = _mapper.Map<List<NhomHangHoaDto>>(rootGroups);
-            
-            // Return hierarchy
-            return result;
-        }
-
-        public async Task<List<NhomHangHoaDto>> GetRootGroupsAsync()
-        {
-            // Get root groups
-            var rootGroups = await _repository.GetRootGroupsAsync();
-            
-            // Map to DTOs and return
-            return _mapper.Map<List<NhomHangHoaDto>>(rootGroups);
-        }
-
-        public async Task<PagedList<NhomHangHoaDto>> GetWithFilterAsync(SpecificationParams specParams)
-        {
-            // Get filtered data
-            var pagedData = await _repository.GetFilteredAsync(specParams);
-            
-            // Map to DTOs using extension method
-            return pagedData.MapTo<Dm_NhomHangHoa, NhomHangHoaDto>(_mapper);
-        }
-
-        public async Task<PagedList<NhomHangHoaDto>> SearchAsync(SearchParams searchParams)
-        {
-            // Create specification params
-            var specParams = new SpecificationParams
-            {
-                PageIndex = searchParams.PageIndex,
-                PageSize = searchParams.PageSize,
-                SearchTerm = searchParams.SearchTerm
-            };
-
-            // Get filtered data
-            var pagedData = await _repository.GetFilteredAsync(specParams);
-
-            // Map to DTOs using extension method
-            return pagedData.MapTo<Dm_NhomHangHoa, NhomHangHoaDto>(_mapper);
-        }
-
-        public async Task<List<NhomHangHoaDto>> GetByLoaiNhomAsync(LoaiNhom loaiNhom)
-        {
-            var entities = await _repository.GetByLoaiNhomAsync(loaiNhom);
-            return _mapper.Map<List<NhomHangHoaDto>>(entities);
-        }
-        
-        public async Task<List<NhomHangHoaDto>> GetChildGroupsByLoaiNhomAsync(Guid parentId, LoaiNhom loaiNhom)
-        {
-            if (!await _repository.ExistsAsync(parentId))
-            {
-                throw new Exception($"Nhóm cha với ID: {parentId} không tồn tại");
-            }
-            
-            var entities = await _repository.GetChildGroupsByLoaiNhomAsync(parentId, loaiNhom);
-            return _mapper.Map<List<NhomHangHoaDto>>(entities);
-        }
-        
-        public async Task<bool> CanBeParentAsync(Guid parentId, LoaiNhom childLoaiNhom)
-        {
-            return await _repository.CanBeParentAsync(parentId, childLoaiNhom);
-        }
-        
-        public async Task<HierarchyDto> GetHierarchyWithLoaiNhomAsync()
-        {
-            var hierarchyData = await _repository.GetHierarchyWithLoaiNhomAsync();
-            
-            // Chuyển đổi kết quả thành cấu trúc phù hợp với DTO phân cấp
-            var result = new HierarchyDto
-            {
-                Roots = _mapper.Map<List<HierarchyNodeDto>>(hierarchyData)
-            };
-            
-            return result;
-        }
-        
-        public async Task<bool> IsParentOfAnyGroupAsync(Guid id)
-        {
-            return await _repository.IsParentOfAnyGroupAsync(id);
-        }
-        
-        public async Task<bool> HasProductsAsync(Guid id)
-        {
-            return await _repository.HasProductsAsync(id);
+            return new PagedList<HangHoaDto>(
+                dtos,
+                productsPage.TotalCount,
+                productsPage.CurrentPage,
+                productsPage.PageSize);
         }
     }
 }

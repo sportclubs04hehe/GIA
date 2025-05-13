@@ -11,11 +11,24 @@ namespace Application.Mappings
     {
         public MappingsProfile()
         {
-            // NhomHangHoa mappings
+            #region NhomHangHoa mappings
             CreateMap<Dm_NhomHangHoa, NhomHangHoaDto>();
             CreateMap<NhomHangHoaDto, Dm_NhomHangHoa>();
+            CreateMap<Dm_NhomHangHoa, NhomHangHoaDetailDto>();
+            CreateMap<CreateNhomHangHoaDto, NhomHangHoaDto>();
+            CreateMap<CreateNhomHangHoaDto, Dm_NhomHangHoa>()
+                .ForMember(dest => dest.NgayHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
+                .ForMember(dest => dest.NgayHetHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc)); ;
+            CreateMap<UpdateNhomHangHoaDto, NhomHangHoaDto>();
+            CreateMap<UpdateNhomHangHoaDto, Dm_NhomHangHoa>()
+                .ForMember(dest => dest.NgayHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
+                .ForMember(dest => dest.NgayHetHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc));
+            #endregion
 
-            // HangHoa mappings
             #region Hàng hóa thị trường mappings
             // Entity → DTO
             CreateMap<Dm_HangHoa, HangHoaDto>()
@@ -72,13 +85,6 @@ namespace Application.Mappings
                 .ForMember(dest => dest.IsDelete, opt => opt.MapFrom(src => false));
 
             #endregion
-
-
-            // NhomHangHoa mappings
-            CreateMap<CreateNhomHangHoaDto, NhomHangHoaDto>();
-            CreateMap<CreateNhomHangHoaDto, Dm_NhomHangHoa>();
-            CreateMap<UpdateNhomHangHoaDto, NhomHangHoaDto>();
-            CreateMap<UpdateNhomHangHoaDto, Dm_NhomHangHoa>();
 
             //DonViTinh mappings
             CreateMap<Dm_DonViTinh, DonViTinhsDto>()

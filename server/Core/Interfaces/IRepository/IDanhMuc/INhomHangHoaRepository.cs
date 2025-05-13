@@ -1,41 +1,24 @@
 ﻿using Core.Entities.Domain.DanhMuc;
-using Core.Entities.Domain.Enum;
-using Core.Helpers;
 using Core.Interfaces.IGeneric;
-using Core.Specifications;
-
+using Core.Helpers;
 namespace Core.Interfaces.IRepository.IDanhMuc
 {
-    /// <summary>
-    /// Repository interface for NhomHangHoa (Product Category) operations
-    /// </summary>
     public interface INhomHangHoaRepository : IGenericRepository<Dm_NhomHangHoa>
     {
-        // Additional methods not in generic repository
-        Task<Dm_NhomHangHoa?> GetByMaNhomAsync(string maNhom);
-        Task<bool> ExistsByMaNhomAsync(string maNhom);
+        // Kiểm tra trùng mã nhóm trong cùng một nhóm cha
+        Task<bool> IsMaNhomExistsInSameParentAsync(string maNhom, Guid? parentId, Guid? excludeId = null);
         
-        // Hierarchy-specific operations
-        Task<IReadOnlyList<Dm_NhomHangHoa>> GetRootGroupsAsync();
-        Task<IReadOnlyList<Dm_NhomHangHoa>> GetChildGroupsAsync(Guid parentId);
-        Task<Dm_NhomHangHoa> GetWithChildrenAsync(Guid id, int levels = 1);
-        Task<Dm_NhomHangHoa> GetWithProductsAsync(Guid id);
+        // Lấy tất cả nhóm con (trực tiếp) của một nhóm
+        Task<List<Dm_NhomHangHoa>> GetChildGroupsAsync(Guid parentId);
         
-        // Advanced operations using specifications
-        Task<Dm_NhomHangHoa> GetSingleBySpecAsync(ISpecification<Dm_NhomHangHoa> spec);
-        Task<IReadOnlyList<Dm_NhomHangHoa>> GetListBySpecAsync(ISpecification<Dm_NhomHangHoa> spec);
-        Task<PagedList<Dm_NhomHangHoa>> GetPagedBySpecAsync(ISpecification<Dm_NhomHangHoa> spec, PaginationParams paginationParams);
-        Task<int> CountAsync(ISpecification<Dm_NhomHangHoa> spec);
+        // Lấy tất cả nhóm con (đệ quy) của một nhóm
+        Task<List<Dm_NhomHangHoa>> GetAllDescendantsAsync(Guid parentId);
         
-        // Additional filtering methods
-        Task<PagedList<Dm_NhomHangHoa>> GetFilteredAsync(SpecificationParams specParams);
-
-        // AI
-        Task<IReadOnlyList<Dm_NhomHangHoa>> GetByLoaiNhomAsync(LoaiNhom loaiNhom);
-        Task<IReadOnlyList<Dm_NhomHangHoa>> GetChildGroupsByLoaiNhomAsync(Guid parentId, LoaiNhom loaiNhom);
-        Task<bool> CanBeParentAsync(Guid parentId, LoaiNhom childLoaiNhom);
-        Task<List<Dm_NhomHangHoa>> GetHierarchyWithLoaiNhomAsync();
-        Task<bool> IsParentOfAnyGroupAsync(Guid id);
-        Task<bool> HasProductsAsync(Guid id);
+        // Lấy tất cả hàng hóa của một nhóm và các nhóm con
+        Task<PagedList<Dm_HangHoa>> GetAllProductsInGroupAsync(Guid groupId, PaginationParams paginationParams);
+        
+        // Xóa nhóm hàng hóa và các nhóm con, hàng hóa liên quan
+        Task<bool> DeleteGroupWithRelatedEntitiesAsync(Guid groupId);
+        Task<List<Dm_NhomHangHoa>> GetRootNodesAsync();
     }
 }

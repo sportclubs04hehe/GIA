@@ -1,17 +1,22 @@
-﻿using Core.Entities.Domain.Enum;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Application.DTOs.DanhMuc.NhomHangHoasDto
 {
     public class UpdateNhomHangHoaDto : BaseDto
     {
-        public required string MaNhom { get; set; }
-        public required string TenNhom { get; set; }
-        public LoaiNhom LoaiNhom { get; set; }
+        [Required]
+        public string MaNhom { get; set; }
+        [Required]
+        public string TenNhom { get; set; }
+        [Required]
+        [Display(Name = "Ngày hiệu lực")]
+        [DataType(DataType.Date)]
+        public DateTime NgayHieuLuc { get; set; }
+
+        [Required]
+        [Display(Name = "Ngày hết hiệu lực")]
+        [DataType(DataType.Date)]
+        public DateTime NgayHetHieuLuc { get; set; }
         public string? GhiChu { get; set; }
 
         // Cho phép cập nhật lại nhóm cha nếu cần

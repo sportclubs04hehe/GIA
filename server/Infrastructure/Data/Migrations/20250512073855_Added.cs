@@ -6,11 +6,32 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class NhomHangHoa : Migration
+    public partial class Added : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "DonViTinhs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Ma = table.Column<string>(type: "text", nullable: false),
+                    Ten = table.Column<string>(type: "text", nullable: false),
+                    GhiChu = table.Column<string>(type: "text", nullable: true),
+                    NgayHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    NgayHetHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsDelete = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "text", nullable: true),
+                    ModifiedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DonViTinhs", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "NhomHangHoa",
                 columns: table => new
@@ -19,11 +40,13 @@ namespace Infrastructure.Data.Migrations
                     MaNhom = table.Column<string>(type: "text", nullable: false),
                     TenNhom = table.Column<string>(type: "text", nullable: false),
                     GhiChu = table.Column<string>(type: "text", nullable: true),
+                    NgayHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    NgayHetHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NhomChaId = table.Column<Guid>(type: "uuid", nullable: true),
                     IsDelete = table.Column<bool>(type: "boolean", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CreatedBy = table.Column<string>(type: "text", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ModifiedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    ModifiedBy = table.Column<string>(type: "text", nullable: true),
                     ModifiedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
@@ -47,16 +70,25 @@ namespace Infrastructure.Data.Migrations
                     GhiChu = table.Column<string>(type: "text", nullable: true),
                     NgayHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NgayHetHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsHangHoa = table.Column<bool>(type: "boolean", nullable: false),
+                    DacTinh = table.Column<string>(type: "text", nullable: true),
+                    DonViTinhId = table.Column<Guid>(type: "uuid", nullable: true),
                     NhomHangHoaId = table.Column<Guid>(type: "uuid", nullable: true),
                     IsDelete = table.Column<bool>(type: "boolean", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CreatedBy = table.Column<string>(type: "text", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ModifiedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    ModifiedBy = table.Column<string>(type: "text", nullable: true),
                     ModifiedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_HangHoa", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_HangHoa_DonViTinhs_DonViTinhId",
+                        column: x => x.DonViTinhId,
+                        principalTable: "DonViTinhs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_HangHoa_NhomHangHoa_NhomHangHoaId",
                         column: x => x.NhomHangHoaId,
@@ -64,6 +96,11 @@ namespace Infrastructure.Data.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_HangHoa_DonViTinhId",
+                table: "HangHoa",
+                column: "DonViTinhId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_HangHoa_NhomHangHoaId",
@@ -81,6 +118,9 @@ namespace Infrastructure.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "HangHoa");
+
+            migrationBuilder.DropTable(
+                name: "DonViTinhs");
 
             migrationBuilder.DropTable(
                 name: "NhomHangHoa");

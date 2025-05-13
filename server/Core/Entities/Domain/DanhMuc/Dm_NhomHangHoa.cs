@@ -1,5 +1,4 @@
-﻿using Core.Entities.Domain.Enum;
-using Core.Entities.IdentityBase;
+﻿using Core.Entities.IdentityBase;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Core.Entities.Domain.DanhMuc
@@ -10,7 +9,8 @@ namespace Core.Entities.Domain.DanhMuc
         public required string MaNhom { get; set; }
         public required string TenNhom { get; set; }
         public string? GhiChu { get; set; }
-        public LoaiNhom LoaiNhom { get; set; } = LoaiNhom.NhomPhanLoai;
+        public DateTime NgayHieuLuc { get; set; }
+        public DateTime NgayHetHieuLuc { get; set; }
         public Guid? NhomChaId { get; set; }
 
         [ForeignKey("NhomChaId")]

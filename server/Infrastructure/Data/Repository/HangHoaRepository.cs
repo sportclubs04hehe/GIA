@@ -99,9 +99,32 @@ namespace Infrastructure.Data.Repository
                 specParams.PageSize);
         }
 
-        public Task<PagedList<Dm_HangHoa>> SearchQuery(SearchParams p)
+        public async Task<PagedList<Dm_HangHoa>> SearchQuery(SearchParams p)
         {
-            return base.SearchAsync(p, x => x.TenMatHang, x => x.MaMatHang);
+            // Start with base query that filters deleted items
+            var query = _dbSet
+                .AsNoTracking()
+                .Where(x => !x.IsDelete);
+                
+            // Apply search term if provided
+            if (!string.IsNullOrWhiteSpace(p.SearchTerm))
+            {
+                var searchTerm = p.SearchTerm.ToLower();
+                query = query.Where(x => 
+                    x.TenMatHang.ToLower().Contains(searchTerm) || 
+                    x.MaMatHang.ToLower().Contains(searchTerm));
+            }
+            
+            // Include related entity
+            query = query.Include(x => x.DonViTinh);
+            
+            // Apply ordering
+            var orderedQuery = query.OrderByDescending(x => x.CreatedDate);
+            
+            return await PagedList<Dm_HangHoa>.CreateAsync(
+                orderedQuery, 
+                p.PageIndex, 
+                p.PageSize);
         }
 
         public Task<int> CountAsync()

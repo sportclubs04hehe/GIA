@@ -1,4 +1,5 @@
-﻿using Application.DTOs.DanhMuc.HangHoasDto;
+﻿using Application.DTOs.DanhMuc.DonViTinhDto;
+using Application.DTOs.DanhMuc.HangHoasDto;
 using Application.Mappings;
 using Application.ServiceInterface.IDanhMuc;
 using AutoMapper;
@@ -117,8 +118,13 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<PagedList<HangHoaDto>> SearchAsync(SearchParams p)
         {
-            var ebntities = await _hangHoaRepository.SearchQuery(p);
-            return ebntities.MapTo<Dm_HangHoa, HangHoaDto>(_mapper);
+            var entities = await _hangHoaRepository.SearchQuery(p);
+            var result = entities.MapTo<Dm_HangHoa, HangHoaDto>(_mapper);
+            
+            // Ensure DonViTinh is loaded for all results
+            await EnsureDonViTinhLoaded(result);
+            
+            return result;
         }
 
         public async Task<(bool IsValid, string ErrorMessage)> ValidateHangHoaAsync(
@@ -297,6 +303,24 @@ namespace Application.ServiceImplement.DanhMuc
             }
             
             return (errors.Count == 0, importedItems, errors);
+        }
+
+        private async Task EnsureDonViTinhLoaded(IEnumerable<HangHoaDto> hangHoaDtos)
+        {
+            var hangHoasWithoutDonViTinh = hangHoaDtos
+                .Where(h => h.DonViTinhId.HasValue && h.DonViTinhSelectDto == null)
+                .ToList();
+                
+            if (!hangHoasWithoutDonViTinh.Any()) return;
+            
+            foreach (var hangHoa in hangHoasWithoutDonViTinh)
+            {
+                var donViTinh = await _donViTinhService.GetByIdAsync(hangHoa.DonViTinhId.Value);
+                if (donViTinh != null)
+                {
+                    hangHoa.DonViTinhSelectDto = _mapper.Map<DonViTinhSelectDto>(donViTinh);
+                }
+            }
         }
     }
 }

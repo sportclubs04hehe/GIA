@@ -13,6 +13,7 @@ namespace Core.Entities.Domain.DanhMuc
         public DateTime NgayHetHieuLuc { get; set; }
 
         // Dữ liệu riêng cho hàng hóa
+        public bool IsHangHoa { get; set; } = true;
         public string? DacTinh { get; set; }
         public Guid? DonViTinhId { get; set; }
         public virtual Dm_DonViTinh? DonViTinh { get; set; }

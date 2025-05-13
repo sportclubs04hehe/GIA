@@ -11,11 +11,6 @@ namespace server
             Console.OutputEncoding = Encoding.UTF8;
             var builder = WebApplication.CreateBuilder(args);
 
-            //builder.WebHost.ConfigureKestrel(options =>
-            //{
-            //    options.ListenLocalhost(7019);
-            //});
-
             builder.Services.AddApplicationServices(builder.Configuration);
             builder.Services.AddIdentityServices(builder.Configuration);
 

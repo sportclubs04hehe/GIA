@@ -98,11 +98,9 @@ namespace Application.ServiceImplement.DanhMuc
                 paginationParams.PageSize
             );
         }
-        public async Task<DonViTinhsDto> GetByIdAsync(Guid id)
-        {
-            var entity = await _repository.GetByIdAsync(id);
-            return _mapper.Map<DonViTinhsDto>(entity);
-        }
+        public async Task<DonViTinhsDto> GetByIdAsync(Guid id) =>
+        _mapper.Map<DonViTinhsDto>(await _repository.GetByIdAsync(id));
+
 
         public async Task<DonViTinhsDto> GetByMaAsync(string ma)
         {
