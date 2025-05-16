@@ -1,0 +1,297 @@
+﻿using Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto;
+using Application.ServiceInterface.IDanhMuc;
+using Core.Helpers;
+using Microsoft.AspNetCore.Mvc;
+using server.Errors;
+using server.Helpers;
+
+namespace server.Controllers.DanhMuc
+{
+    public class Dm_HHThiTruongsController : BaseApiController
+    {
+        private readonly IHHThiTruongService _hhThiTruongService;
+        private readonly ILogger<Dm_HHThiTruongsController> _logger;
+
+        public Dm_HHThiTruongsController(IHHThiTruongService hhThiTruongService, 
+            ILogger<Dm_HHThiTruongsController> logger)
+        {
+            _hhThiTruongService = hhThiTruongService ?? throw new ArgumentNullException(nameof(hhThiTruongService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        /// <summary>
+        /// Lấy thông tin mặt hàng thị trường theo ID
+        /// </summary>
+        [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<HHThiTruongTreeNodeDto>> GetById(Guid id)
+        {
+            try
+            {
+                var matHang = await _hhThiTruongService.GetWithChildrenAsync(id);
+                return Ok(matHang);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse.NotFound(THONGBAO, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving market product with ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, 
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy thông tin mặt hàng"));
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách tất cả mặt hàng thị trường có phân trang
+        /// </summary>
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<PagedList<HHThiTruongDto>>> GetAll([FromQuery] PaginationParams paginationParams)
+        {
+            return await ExecutePagedAsync(() => _hhThiTruongService.GetAllAsync(paginationParams));
+        }
+
+        /// <summary>
+        /// Lấy danh sách các nhóm hàng hóa cha (không có mặt hàng cha)
+        /// </summary>
+        [HttpGet("parents")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<HHThiTruongDto>>> GetAllParentCategories()
+        {
+            try
+            {
+                var parentCategories = await _hhThiTruongService.GetAllParentCategoriesAsync();
+                return Ok(parentCategories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving parent categories");
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy danh sách nhóm hàng hóa cha"));
+            }
+        }
+
+        /// <summary>
+        /// Lấy cấu trúc phân cấp của hàng hóa thị trường dạng cây
+        /// </summary>
+        [HttpGet("hierarchical")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<HHThiTruongTreeNodeDto>>> GetHierarchicalCategories()
+        {
+            try
+            {
+                var hierarchicalCategories = await _hhThiTruongService.GetHierarchicalCategoriesAsync();
+                return Ok(hierarchicalCategories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving hierarchical structure");
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy cấu trúc phân cấp hàng hóa"));
+            }
+        }
+
+        /// <summary>
+        /// Tìm kiếm mặt hàng thị trường theo tên hoặc mã
+        /// </summary>
+        [HttpGet("search")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<PagedList<HHThiTruongDto>>> Search([FromQuery] SearchParams searchParams)
+        {
+            return await ExecutePagedAsync(() => _hhThiTruongService.SearchAsync(searchParams));
+        }
+
+        /// <summary>
+        /// Thêm mới mặt hàng thị trường
+        /// </summary>
+        [HttpPost]
+        [ProducesResponseType(typeof(ApiResponse<HHThiTruongDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<HHThiTruongDto>>> Create([FromBody] CreateHHThiTruongDto createDto)
+        {
+            if (createDto == null)
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Dữ liệu đầu vào không hợp lệ"));
+
+            try
+            {
+                var result = await _hhThiTruongService.CreateAsync(createDto);
+
+                return CreatedAtAction(
+                    nameof(GetById),
+                    routeValues: new { id = result.Id },
+                    value: ApiResponse<HHThiTruongDto>.Created(
+                        data: result,
+                        title: THONGBAO,
+                        message: "Tạo mặt hàng thị trường thành công"
+                    )
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating market product");
+                return StatusCode(StatusCodes.Status500InternalServerError, 
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi thêm mới mặt hàng thị trường"));
+            }
+        }
+
+        /// <summary>
+        /// Cập nhật thông tin mặt hàng thị trường
+        /// </summary>
+        [HttpPut("{id:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<HHThiTruongDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<HHThiTruongDto>>> Update(Guid id, [FromBody] UpdateHHThiTruongDto updateDto)
+        {
+            if (updateDto == null)
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Dữ liệu cập nhật không hợp lệ"));
+
+            try
+            {
+                updateDto.Id = id;
+                var result = await _hhThiTruongService.UpdateAsync(updateDto);
+
+                return Ok(ApiResponse<HHThiTruongDto>.Success(
+                    data: result,
+                    title: THONGBAO,
+                    message: "Cập nhật mặt hàng thị trường thành công"
+                ));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse.NotFound(THONGBAO, ex.Message));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating market product with ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi cập nhật mặt hàng thị trường"));
+            }
+        }
+
+        /// <summary>
+        /// Xóa mặt hàng thị trường theo ID
+        /// </summary>
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<Guid>>> Delete(Guid id)
+        {
+            try
+            {
+                var result = await _hhThiTruongService.DeleteAsync(id);
+                if (result)
+                {
+                    return Ok(ApiResponse<Guid>.Success(
+                        data: id,
+                        title: THONGBAO,
+                        message: "Xóa mặt hàng thị trường thành công"
+                    ));
+                }
+                
+                return NotFound(ApiResponse<Guid>.NotFound(
+                    message: "Không tìm thấy mặt hàng thị trường"
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting market product with ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi xóa mặt hàng thị trường"));
+            }
+        }
+
+        /// <summary>
+        /// Xóa nhiều mặt hàng thị trường cùng lúc
+        /// </summary>
+        [HttpDelete("batch")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<Guid>>>> DeleteMultiple([FromBody] List<Guid> ids)
+        {
+            if (ids == null || !ids.Any())
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Danh sách ID cần xóa không được để trống"));
+
+            try
+            {
+                var result = await _hhThiTruongService.DeleteMultipleAsync(ids);
+                if (result)
+                {
+                    return Ok(ApiResponse<List<Guid>>.Success(
+                        data: ids,
+                        title: THONGBAO,
+                        message: $"Đã xóa thành công {ids.Count} mặt hàng thị trường"
+                    ));
+                }
+
+                return BadRequest(ApiResponse<List<Guid>>.BadRequest(
+                    title: THONGBAO,
+                    message: "Có lỗi xảy ra khi xóa, một số mặt hàng không tồn tại"
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting multiple market products");
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi xóa nhiều mặt hàng thị trường"));
+            }
+        }
+
+        /// <summary>
+        /// Thêm nhiều mặt hàng thị trường cùng lúc
+        /// </summary>
+        [HttpPost("batch")]
+        [ProducesResponseType(typeof(ApiResponse<List<HHThiTruongDto>>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<HHThiTruongDto>>>> CreateMany([FromBody] CreateManyHHThiTruongDto createDto)
+        {
+            if (createDto == null || !createDto.Items.Any())
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Danh sách mặt hàng không được để trống"));
+
+            try
+            {
+                var result = await _hhThiTruongService.CreateManyAsync(createDto);
+
+                return Created(
+                    string.Empty,  // No specific URI for batch creation
+                    ApiResponse<List<HHThiTruongDto>>.Created(
+                        data: result,
+                        title: THONGBAO,
+                        message: $"Đã tạo thành công {result.Count} mặt hàng thị trường"
+                    )
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating multiple market products");
+                return StatusCode(StatusCodes.Status500InternalServerError, 
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi thêm nhiều mặt hàng thị trường"));
+            }
+        }
+    }
+}

@@ -3,7 +3,6 @@ using Core.Interfaces.IRepository.IDanhMuc;
 using Infrastructure.Data.Generic;
 using Microsoft.EntityFrameworkCore;
 using Core.Helpers;
-using System.Linq.Expressions;
 
 namespace Infrastructure.Data.Repository
 {
@@ -83,52 +82,5 @@ namespace Infrastructure.Data.Repository
                 paginationParams.PageSize);
         }
 
-        public async Task<bool> DeleteGroupWithRelatedEntitiesAsync(Guid groupId)
-        {
-            using var transaction = await _storeContext.Database.BeginTransactionAsync();
-            
-            try
-            {
-                // 1. Xác định tất cả các nhóm con
-                var allChildGroups = await GetAllDescendantsAsync(groupId);
-                var allGroupIds = new List<Guid> { groupId };
-                allGroupIds.AddRange(allChildGroups.Select(g => g.Id));
-                
-                // 2. Đánh dấu xóa tất cả hàng hóa trong các nhóm
-                var relatedProducts = await _storeContext.HangHoas
-                    .Where(p => !p.IsDelete && allGroupIds.Contains(p.NhomHangHoaId.Value))
-                    .ToListAsync();
-                    
-                foreach (var product in relatedProducts)
-                {
-                    product.IsDelete = true;
-                    product.ModifiedDate = DateTime.UtcNow;
-                }
-                
-                // 3. Đánh dấu xóa tất cả nhóm con (từ sâu đến nông)
-                foreach (var childGroup in allChildGroups.OrderByDescending(g => g.NhomCon.Count))
-                {
-                    childGroup.IsDelete = true;
-                    childGroup.ModifiedDate = DateTime.UtcNow;
-                }
-                
-                // 4. Cuối cùng đánh dấu xóa nhóm cha
-                var mainGroup = await _dbSet.FindAsync(groupId);
-                if (mainGroup != null)
-                {
-                    mainGroup.IsDelete = true;
-                    mainGroup.ModifiedDate = DateTime.UtcNow;
-                }
-                
-                await _storeContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return true;
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                return false;
-            }
-        }
     }
 }

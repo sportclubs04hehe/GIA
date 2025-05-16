@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class Added : Migration
+    public partial class Added_DB : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "DonViTinhs",
+                name: "DonViTinh",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -29,7 +29,7 @@ namespace Infrastructure.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DonViTinhs", x => x.Id);
+                    table.PrimaryKey("PK_DonViTinh", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -61,6 +61,43 @@ namespace Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "MatHang",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Ma = table.Column<string>(type: "text", nullable: false),
+                    Ten = table.Column<string>(type: "text", nullable: false),
+                    GhiChu = table.Column<string>(type: "text", nullable: true),
+                    NgayHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    NgayHetHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LoaiMatHang = table.Column<int>(type: "integer", nullable: false),
+                    MatHangChaId = table.Column<Guid>(type: "uuid", nullable: true),
+                    DacTinh = table.Column<string>(type: "text", nullable: true),
+                    DonViTinhId = table.Column<Guid>(type: "uuid", nullable: true),
+                    IsDelete = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "text", nullable: true),
+                    ModifiedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MatHang", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MatHang_DonViTinh_DonViTinhId",
+                        column: x => x.DonViTinhId,
+                        principalTable: "DonViTinh",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_MatHang_MatHang_MatHangChaId",
+                        column: x => x.MatHangChaId,
+                        principalTable: "MatHang",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "HangHoa",
                 columns: table => new
                 {
@@ -84,9 +121,9 @@ namespace Infrastructure.Data.Migrations
                 {
                     table.PrimaryKey("PK_HangHoa", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_HangHoa_DonViTinhs_DonViTinhId",
+                        name: "FK_HangHoa_DonViTinh_DonViTinhId",
                         column: x => x.DonViTinhId,
-                        principalTable: "DonViTinhs",
+                        principalTable: "DonViTinh",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -108,6 +145,32 @@ namespace Infrastructure.Data.Migrations
                 column: "NhomHangHoaId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MatHang_DonViTinhId",
+                table: "MatHang",
+                column: "DonViTinhId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MatHang_IsDelete",
+                table: "MatHang",
+                column: "IsDelete");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MatHang_LoaiMatHang",
+                table: "MatHang",
+                column: "LoaiMatHang");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MatHang_Ma_MatHangChaId",
+                table: "MatHang",
+                columns: new[] { "Ma", "MatHangChaId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MatHang_MatHangChaId",
+                table: "MatHang",
+                column: "MatHangChaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_NhomHangHoa_NhomChaId",
                 table: "NhomHangHoa",
                 column: "NhomChaId");
@@ -120,10 +183,13 @@ namespace Infrastructure.Data.Migrations
                 name: "HangHoa");
 
             migrationBuilder.DropTable(
-                name: "DonViTinhs");
+                name: "MatHang");
 
             migrationBuilder.DropTable(
                 name: "NhomHangHoa");
+
+            migrationBuilder.DropTable(
+                name: "DonViTinh");
         }
     }
 }

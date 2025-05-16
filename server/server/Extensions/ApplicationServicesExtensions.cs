@@ -32,6 +32,7 @@ namespace server.Extensions
             services.AddScoped<IHangHoaService, HangHoaService>();
             services.AddScoped<INhomHangHoaService, NhomHangHoaService>();
             services.AddScoped<IDonViTinhService, DonViTinhService>();
+            services.AddScoped<IHHThiTruongService, HHThiTruongService>();
 
             #endregion
 
@@ -46,6 +47,7 @@ namespace server.Extensions
             services.AddScoped<IHangHoaRepository, HangHoaRepository>();
             services.AddScoped<INhomHangHoaRepository, NhomHangHoaRepository>();
             services.AddScoped<IDonViTinhRepository, DonViTinhRepository>();
+            services.AddScoped<IHHThiTruongRepository, HHThiTruongRepository>();
 
             #endregion
 

@@ -8,7 +8,6 @@ namespace Application.ServiceInterface.IDanhMuc
     {
         Task<NhomHangHoaDto> CreateNhomHangHoaAsync(CreateNhomHangHoaDto createDto);
         Task<NhomHangHoaDto> UpdateNhomHangHoaAsync(Guid id, UpdateNhomHangHoaDto updateDto);
-        Task<bool> DeleteNhomHangHoaAsync(Guid id);
         Task<NhomHangHoaDto> GetNhomHangHoaByIdAsync(Guid id);
         Task<PagedList<NhomHangHoaDto>> GetAllNhomHangHoasAsync(PaginationParams paginationParams);
         Task<PagedList<NhomHangHoaDto>> SearchNhomHangHoasAsync(SearchParams searchParams);

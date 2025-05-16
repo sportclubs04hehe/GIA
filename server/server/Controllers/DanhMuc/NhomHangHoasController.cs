@@ -173,7 +173,7 @@ namespace server.Controllers.DanhMuc
         [ProducesResponseType(typeof(ApiResponse<NhomHangHoaDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<NhomHangHoaDto>>> Create([FromBody] CreateNhomHangHoaDto createDto)
+        public async Task<ActionResult<ApiResponse<NhomHangHoaDto>>> Add([FromBody] CreateNhomHangHoaDto createDto)
         {
             if (createDto == null)
                 return BadRequest(ApiResponse.BadRequest(THONGBAO, "Dữ liệu đầu vào không hợp lệ"));
@@ -236,48 +236,6 @@ namespace server.Controllers.DanhMuc
                 return ex is ArgumentException 
                     ? BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message))
                     : StatusCode(500, ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi cập nhật nhóm hàng hóa"));
-            }
-        }
-
-        /// <summary>
-        /// Xóa nhóm hàng hóa và các đối tượng liên quan
-        /// </summary>
-        [HttpDelete("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<Guid>>> Delete(Guid id)
-        {
-            try
-            {
-                // Kiểm tra tồn tại
-                var nhomHangHoa = await _nhomHangHoaService.GetNhomHangHoaByIdAsync(id);
-                if (nhomHangHoa == null)
-                    return NotFound(ApiResponse<Guid>.NotFound(
-                        message: $"Không tìm thấy nhóm hàng hóa với ID: {id}"
-                    ));
-
-                // Thực hiện xóa
-                var result = await _nhomHangHoaService.DeleteNhomHangHoaAsync(id);
-                if (result)
-                {
-                    return Ok(ApiResponse<Guid>.Success(
-                        data: id,
-                        title: THONGBAO,
-                        message: "Xóa nhóm hàng hóa và dữ liệu liên quan thành công"
-                    ));
-                }
-                
-                return BadRequest(ApiResponse<Guid>.BadRequest(
-                    message: "Không thể xóa nhóm hàng hóa"
-                ));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi xóa nhóm hàng hóa với ID: {Id}", id);
-                return StatusCode(500, ApiResponse<Guid>.ServerError(
-                    message: "Có lỗi xảy ra khi xóa nhóm hàng hóa"
-                ));
             }
         }
     }

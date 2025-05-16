@@ -1,4 +1,5 @@
-﻿using Application.DTOs.DanhMuc.DonViTinhDto;
+﻿using Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto;
+using Application.DTOs.DanhMuc.DonViTinhDto;
 using Application.DTOs.DanhMuc.HangHoasDto;
 using Application.DTOs.DanhMuc.NhomHangHoasDto;
 using Application.Resolver;
@@ -84,6 +85,27 @@ namespace Application.Mappings
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForMember(dest => dest.IsDelete, opt => opt.MapFrom(src => false));
 
+            #endregion
+
+            #region DM Hàng hóa thị trường 
+            CreateMap<Dm_HangHoaThiTruong, HHThiTruongDto>()
+               .ForMember(d => d.TenMatHangCha, o => o.MapFrom(s => s.MatHangCha != null ? s.MatHangCha.Ten : null))
+               .ForMember(d => d.TenDonViTinh, o => o.MapFrom(s => s.DonViTinh != null ? s.DonViTinh.Ten : null));
+
+            CreateMap<CreateHHThiTruongDto, Dm_HangHoaThiTruong>()
+                .ForMember(dest => dest.NgayHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
+                .ForMember(dest => dest.NgayHetHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc));
+
+            CreateMap<UpdateHHThiTruongDto, Dm_HangHoaThiTruong>()
+                .ForMember(dest => dest.NgayHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
+                .ForMember(dest => dest.NgayHetHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc));
+
+            CreateMap<Dm_HangHoaThiTruong, HHThiTruongTreeNodeDto>()
+                .ForMember(d => d.Children, o => o.MapFrom(s => s.MatHangCon.Where(c => !c.IsDelete)));
             #endregion
 
             //DonViTinh mappings

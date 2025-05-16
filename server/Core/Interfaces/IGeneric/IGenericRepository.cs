@@ -1,4 +1,5 @@
 ﻿using Core.Helpers;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +15,8 @@ namespace Core.Interfaces.IGeneric
         Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities);
         Task<bool> UpdateAsync(T entity);
         Task<bool> DeleteAsync(Guid id);
+        Task<T> GetByIdNoTrackingAsync(Guid id);
+        Task<IDbContextTransaction> BeginTransactionAsync();
         Task<T> GetByIdAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
         Task<PagedList<T>> GetAllAsync(PaginationParams paginationParams);

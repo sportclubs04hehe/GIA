@@ -2,6 +2,7 @@
 using Core.Helpers;
 using Core.Interfaces.IGeneric;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 
 namespace Infrastructure.Data.Generic
@@ -60,6 +61,17 @@ namespace Infrastructure.Data.Generic
             entity.IsDelete = true;
             entity.ModifiedDate = DateTime.UtcNow;
             return await _context.SaveChangesAsync() > 0;
+        }
+
+
+        public virtual async Task<T> GetByIdNoTrackingAsync(Guid id)
+        {
+            return await _dbSet.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && !x.IsDelete);
+        }
+
+        public virtual async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
 
         public virtual async Task<T> GetByIdAsync(Guid id)

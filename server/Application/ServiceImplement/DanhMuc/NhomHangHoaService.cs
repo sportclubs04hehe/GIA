@@ -57,11 +57,6 @@ namespace Application.ServiceImplement.DanhMuc
             return _mapper.Map<List<NhomHangHoaDto>>(rootNodes);
         }
 
-        public async Task<bool> DeleteNhomHangHoaAsync(Guid id)
-        {
-            return await _repository.DeleteGroupWithRelatedEntitiesAsync(id);
-        }
-
         public async Task<NhomHangHoaDto> GetNhomHangHoaByIdAsync(Guid id)
         {
             var entity = await _repository.GetByIdAsync(id);

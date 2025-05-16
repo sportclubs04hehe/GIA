@@ -16,9 +16,6 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         
         // Lấy tất cả hàng hóa của một nhóm và các nhóm con
         Task<PagedList<Dm_HangHoa>> GetAllProductsInGroupAsync(Guid groupId, PaginationParams paginationParams);
-        
-        // Xóa nhóm hàng hóa và các nhóm con, hàng hóa liên quan
-        Task<bool> DeleteGroupWithRelatedEntitiesAsync(Guid groupId);
         Task<List<Dm_NhomHangHoa>> GetRootNodesAsync();
     }
 }
