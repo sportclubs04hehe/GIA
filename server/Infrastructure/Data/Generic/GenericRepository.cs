@@ -84,6 +84,14 @@ namespace Infrastructure.Data.Generic
             return await _dbSet.AnyAsync(x => x.Id == id && !x.IsDelete);
         }
 
+        public virtual async Task<List<Guid>> ExistsManyAsync(IEnumerable<Guid> ids)
+        {
+            return await _dbSet
+                .Where(x => !x.IsDelete && ids.Contains(x.Id))
+                .Select(x => x.Id)
+                .ToListAsync();
+        }
+
         protected virtual IQueryable<T> IncludeRelations(IQueryable<T> query)
         => query;
 

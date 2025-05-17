@@ -5,21 +5,19 @@ using Core.Entities.Domain.DanhMuc;
 using Core.Entities.Domain.DanhMuc.Enum;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
-using Microsoft.EntityFrameworkCore.Storage;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Application.ServiceImplement.DanhMuc
 {
     public class HHThiTruongService : IHHThiTruongService
     {
         private readonly IHHThiTruongRepository _repository;
+        private readonly IDonViTinhRepository _donViTinhRepository;
         private readonly IMapper _mapper;
 
-        public HHThiTruongService(IHHThiTruongRepository repository, IMapper mapper)
+        public HHThiTruongService(IHHThiTruongRepository repository, IDonViTinhRepository donViTinhRepository, IMapper mapper)
         {
             _repository = repository;
+            _donViTinhRepository = donViTinhRepository;
             _mapper = mapper;
         }
 
@@ -210,6 +208,25 @@ namespace Application.ServiceImplement.DanhMuc
                 await ValidateCreateDtoAsync(item);
             }
             
+            // Collect all DonViTinhIds to validate in a single query
+            var donViTinhIds = createDto.Items
+                .Where(x => x.DonViTinhId.HasValue)
+                .Select(x => x.DonViTinhId!.Value)
+                .Distinct()
+                .ToList();
+            
+            if (donViTinhIds.Any())
+            {
+                // Sử dụng phương thức kế thừa từ GenericRepository
+                var existingDonViTinhIds = await _donViTinhRepository.ExistsManyAsync(donViTinhIds);
+                var missingIds = donViTinhIds.Except(existingDonViTinhIds).ToList();
+                
+                if (missingIds.Any())
+                {
+                    throw new ArgumentException($"Một hoặc nhiều đơn vị tính không tồn tại: {string.Join(", ", missingIds)}");
+                }
+            }
+            
             // Prepare entities
             var entities = new List<Dm_HangHoaThiTruong>();
             
@@ -217,16 +234,16 @@ namespace Application.ServiceImplement.DanhMuc
             {
                 var entity = _mapper.Map<Dm_HangHoaThiTruong>(dto);
                 
-                // Set LoaiMatHang based on whether it has DonViTinhId
-                entity.LoaiMatHang = dto.DonViTinhId.HasValue
-                    ? LoaiMatHangEnum.HangHoa
-                    : LoaiMatHangEnum.Nhom;
-
-                // If it's a category, clear product-specific fields
-                if (entity.LoaiMatHang == LoaiMatHangEnum.Nhom)
+                // If it's a category (LoaiMatHang = 0), ensure product-specific fields are cleared
+                if (dto.LoaiMatHang == LoaiMatHangEnum.Nhom)
                 {
                     entity.DonViTinhId = null;
                     entity.DacTinh = null;
+                }
+                // If it's a product (LoaiMatHang = 1), ensure required fields are present
+                else if (dto.LoaiMatHang == LoaiMatHangEnum.HangHoa && !dto.DonViTinhId.HasValue)
+                {
+                    throw new ArgumentException($"Mặt hàng '{dto.Ten}' có loại là hàng hóa nhưng không có đơn vị tính");
                 }
                 
                 entities.Add(entity);
@@ -237,6 +254,12 @@ namespace Application.ServiceImplement.DanhMuc
             
             // Map back to DTOs
             return _mapper.Map<List<HHThiTruongDto>>(result);
+        }
+
+        public async Task<List<HHThiTruongTreeNodeDto>> GetChildrenByParentIdAsync(Guid parentId)
+        {
+            var entities = await _repository.GetChildrenByParentIdAsync(parentId);
+            return _mapper.Map<List<HHThiTruongTreeNodeDto>>(entities);
         }
     }
 }

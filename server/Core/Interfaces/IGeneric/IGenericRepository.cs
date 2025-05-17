@@ -19,6 +19,7 @@ namespace Core.Interfaces.IGeneric
         Task<IDbContextTransaction> BeginTransactionAsync();
         Task<T> GetByIdAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
+        Task<List<Guid>> ExistsManyAsync(IEnumerable<Guid> ids);
         Task<PagedList<T>> GetAllAsync(PaginationParams paginationParams);
         Task<PagedList<T>> SearchAsync(
             SearchParams searchParams,

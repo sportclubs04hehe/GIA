@@ -293,5 +293,23 @@ namespace server.Controllers.DanhMuc
                     ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi thêm nhiều mặt hàng thị trường"));
             }
         }
+
+        [HttpGet("children/{parentId:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<HHThiTruongTreeNodeDto>>> GetChildrenByParent(Guid parentId)
+        {
+            try
+            {
+                var children = await _hhThiTruongService.GetChildrenByParentIdAsync(parentId);
+                return Ok(children);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving children for parent with ID: {Id}", parentId);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy danh sách các mặt hàng con"));
+            }
+        }
     }
 }

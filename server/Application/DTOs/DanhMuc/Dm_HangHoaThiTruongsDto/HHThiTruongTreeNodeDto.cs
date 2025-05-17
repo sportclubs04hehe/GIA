@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
 {
@@ -13,6 +10,9 @@ namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
         public string Ten { get; set; }
         public int LoaiMatHang { get; set; }
         public Guid? MatHangChaId { get; set; }
+        // Thêm thông tin đơn vị tính
+        public Guid? DonViTinhId { get; set; }
+        public string? TenDonViTinh { get; set; }
         public List<HHThiTruongTreeNodeDto> Children { get; set; } = new List<HHThiTruongTreeNodeDto>();
     }
 }

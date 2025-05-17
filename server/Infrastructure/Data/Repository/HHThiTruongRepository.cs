@@ -171,5 +171,15 @@ namespace Infrastructure.Data.Repository
                 throw;
             }
         }
+
+        public async Task<List<Dm_HangHoaThiTruong>> GetChildrenByParentIdAsync(Guid parentId)
+        {
+            return await _dbSet
+                .Where(x => !x.IsDelete && x.MatHangChaId == parentId)
+                .Include(x => x.DonViTinh)
+                .OrderBy(x => x.Ten)
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }

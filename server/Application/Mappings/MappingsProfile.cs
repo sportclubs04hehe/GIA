@@ -105,7 +105,9 @@ namespace Application.Mappings
                     opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc));
 
             CreateMap<Dm_HangHoaThiTruong, HHThiTruongTreeNodeDto>()
-                .ForMember(d => d.Children, o => o.MapFrom(s => s.MatHangCon.Where(c => !c.IsDelete)));
+                .ForMember(d => d.Children, o => o.MapFrom(s => s.MatHangCon.Where(c => !c.IsDelete)))
+                .ForMember(d => d.TenDonViTinh, o => o.MapFrom(s => s.DonViTinh != null ? s.DonViTinh.Ten : null))
+                .ForMember(d => d.DonViTinhId, o => o.MapFrom(s => s.DonViTinhId));
             #endregion
 
             //DonViTinh mappings

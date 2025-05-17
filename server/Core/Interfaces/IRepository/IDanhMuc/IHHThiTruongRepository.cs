@@ -18,5 +18,7 @@ namespace Core.Interfaces.IRepository.IDanhMuc
 
         // Add this method to the existing interface
         Task<IEnumerable<Dm_HangHoaThiTruong>> AddRangeWithValidationAsync(IEnumerable<Dm_HangHoaThiTruong> entities);
+
+        Task<List<Dm_HangHoaThiTruong>> GetChildrenByParentIdAsync(Guid parentId);
     }
 }

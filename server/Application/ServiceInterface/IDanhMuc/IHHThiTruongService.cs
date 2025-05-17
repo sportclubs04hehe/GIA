@@ -21,5 +21,6 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<bool> IsValidCodeAsync(string ma, Guid? parentId, Guid? exceptId = null);
         Task<bool> ValidateCreateDtoAsync(CreateHHThiTruongDto createDto);
         Task<bool> ValidateUpdateDtoAsync(UpdateHHThiTruongDto updateDto);
+        Task<List<HHThiTruongTreeNodeDto>> GetChildrenByParentIdAsync(Guid parentId);
     }
 }

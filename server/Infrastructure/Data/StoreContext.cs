@@ -12,8 +12,6 @@ namespace Infrastructure.Data
         // Trong quá trình chuyển đổi, vẫn giữ lại DbSet cũ
         public DbSet<Dm_NhomHangHoa> NhomHangHoas { get; set; }
         public DbSet<Dm_HangHoa> HangHoas { get; set; }
-        
-        // DbSet mới
         public DbSet<Dm_DonViTinh> DonViTinhs { get; set; }
         public DbSet<Dm_HangHoaThiTruong> MatHangs { get; set; }
 
@@ -48,7 +46,6 @@ namespace Infrastructure.Data
                 .HasForeignKey(m => m.MatHangChaId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Quan hệ với Đơn vị tính - one-to-many (một đơn vị tính có thể có nhiều mặt hàng)
             modelBuilder.Entity<Dm_HangHoaThiTruong>()
                 .HasOne(m => m.DonViTinh)
                 .WithMany(d => d.MatHangs)
