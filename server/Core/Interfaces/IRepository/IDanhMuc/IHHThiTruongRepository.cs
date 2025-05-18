@@ -1,4 +1,5 @@
 ﻿using Core.Entities.Domain.DanhMuc;
+using Core.Helpers;
 using Core.Interfaces.IGeneric;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         Task<bool> DeleteWithChildrenAsync(Guid id);
         Task<bool> ExistsByMaInSameLevelAsync(string ma, Guid? parentId, Guid? exceptId = null);
         Task<IEnumerable<Dm_HangHoaThiTruong>> AddRangeWithValidationAsync(IEnumerable<Dm_HangHoaThiTruong> entities);
-        Task<List<Dm_HangHoaThiTruong>> GetChildrenByParentIdAsync(Guid parentId);
+        Task<PagedList<Dm_HangHoaThiTruong>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams);
         
         // Thêm phương thức thiếu
         Task<List<Dm_HangHoaThiTruong>> SearchAllAsync(string searchTerm, params Expression<Func<Dm_HangHoaThiTruong, string>>[] searchFields);

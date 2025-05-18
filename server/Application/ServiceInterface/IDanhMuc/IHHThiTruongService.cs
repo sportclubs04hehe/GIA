@@ -21,7 +21,7 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<bool> ValidateCreateDtoAsync(CreateHHThiTruongDto createDto);
         Task<bool> ValidateUpdateDtoAsync(UpdateHHThiTruongDto updateDto);
         Task<List<HHThiTruongDto>> CreateManyAsync(CreateManyHHThiTruongDto createDto);
-        Task<List<HHThiTruongTreeNodeDto>> GetChildrenByParentIdAsync(Guid parentId);
         Task<List<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm);
+        Task<PagedList<HHThiTruongTreeNodeDto>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams);
     }
 }

@@ -256,12 +256,6 @@ namespace Application.ServiceImplement.DanhMuc
             return _mapper.Map<List<HHThiTruongDto>>(result);
         }
 
-        public async Task<List<HHThiTruongTreeNodeDto>> GetChildrenByParentIdAsync(Guid parentId)
-        {
-            var entities = await _repository.GetChildrenByParentIdAsync(parentId);
-            return _mapper.Map<List<HHThiTruongTreeNodeDto>>(entities);
-        }
-
         public async Task<List<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm)
         {
             // Tìm tất cả items khớp với searchTerm
@@ -293,6 +287,18 @@ namespace Application.ServiceImplement.DanhMuc
             
             var rootItems = await _repository.GetRootItemsForSearchAsync(parentIds, itemIds);
             return _mapper.Map<List<HHThiTruongTreeNodeDto>>(rootItems);
+        }
+
+        public async Task<PagedList<HHThiTruongTreeNodeDto>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams)
+        {
+            var entities = await _repository.GetChildrenByParentIdPagedAsync(parentId, paginationParams);
+            
+            return new PagedList<HHThiTruongTreeNodeDto>(
+                _mapper.Map<List<HHThiTruongTreeNodeDto>>(entities.ToList()),
+                entities.TotalCount,
+                entities.CurrentPage,
+                entities.PageSize
+            );
         }
     }
 }

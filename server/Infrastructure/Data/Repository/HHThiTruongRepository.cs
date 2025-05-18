@@ -1,5 +1,6 @@
 ﻿using Core.Entities.Domain.DanhMuc;
 using Core.Entities.Domain.DanhMuc.Enum;
+using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
 using Infrastructure.Data.Generic;
 using Microsoft.EntityFrameworkCore;
@@ -173,16 +174,6 @@ namespace Infrastructure.Data.Repository
             }
         }
 
-        public async Task<List<Dm_HangHoaThiTruong>> GetChildrenByParentIdAsync(Guid parentId)
-        {
-            return await _dbSet
-                .Where(x => !x.IsDelete && x.MatHangChaId == parentId)
-                .Include(x => x.DonViTinh)
-                .OrderBy(x => x.Ten)
-                .AsNoTracking()
-                .ToListAsync();
-        }
-
         // Tìm kiếm không phân trang
         public async Task<List<Dm_HangHoaThiTruong>> SearchAllAsync(
             string searchTerm, 
@@ -275,6 +266,24 @@ namespace Infrastructure.Data.Repository
             }
             
             return rootNodes;
+        }
+
+        public async Task<PagedList<Dm_HangHoaThiTruong>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams)
+        {
+            var query = _dbSet
+                .Where(x => !x.IsDelete && x.MatHangChaId == parentId)
+                .Include(x => x.DonViTinh)
+                .AsNoTracking();
+
+            // Áp dụng sắp xếp
+            query = string.IsNullOrEmpty(paginationParams.OrderBy)
+                ? query.OrderBy(x => x.Ten)
+                : query.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
+
+            return await PagedList<Dm_HangHoaThiTruong>.CreateAsync(
+                query, 
+                paginationParams.PageIndex, 
+                paginationParams.PageSize);
         }
     }
 }

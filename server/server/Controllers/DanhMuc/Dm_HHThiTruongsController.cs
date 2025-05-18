@@ -294,22 +294,17 @@ namespace server.Controllers.DanhMuc
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách mặt hàng con theo mặt hàng cha có phân trang
+        /// </summary>
         [HttpGet("children/{parentId:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<List<HHThiTruongTreeNodeDto>>> GetChildrenByParent(Guid parentId)
+        public async Task<ActionResult<PagedList<HHThiTruongTreeNodeDto>>> GetChildrenByParent(
+            Guid parentId, 
+            [FromQuery] PaginationParams paginationParams)
         {
-            try
-            {
-                var children = await _hhThiTruongService.GetChildrenByParentIdAsync(parentId);
-                return Ok(children);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving children for parent with ID: {Id}", parentId);
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy danh sách các mặt hàng con"));
-            }
+            return await ExecutePagedAsync(() => _hhThiTruongService.GetChildrenByParentIdPagedAsync(parentId, paginationParams));
         }
 
         /// <summary>
