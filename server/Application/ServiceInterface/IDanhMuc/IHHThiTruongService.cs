@@ -9,7 +9,6 @@ namespace Application.ServiceInterface.IDanhMuc
     public interface IHHThiTruongService
     {
         Task<HHThiTruongDto> CreateAsync(CreateHHThiTruongDto createDto);
-        Task<List<HHThiTruongDto>> CreateManyAsync(CreateManyHHThiTruongDto createDto);
         Task<HHThiTruongDto> UpdateAsync(UpdateHHThiTruongDto updateDto);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> DeleteMultipleAsync(List<Guid> ids);
@@ -21,6 +20,8 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<bool> IsValidCodeAsync(string ma, Guid? parentId, Guid? exceptId = null);
         Task<bool> ValidateCreateDtoAsync(CreateHHThiTruongDto createDto);
         Task<bool> ValidateUpdateDtoAsync(UpdateHHThiTruongDto updateDto);
+        Task<List<HHThiTruongDto>> CreateManyAsync(CreateManyHHThiTruongDto createDto);
         Task<List<HHThiTruongTreeNodeDto>> GetChildrenByParentIdAsync(Guid parentId);
+        Task<List<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm);
     }
 }

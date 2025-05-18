@@ -156,7 +156,7 @@ namespace Infrastructure.Data.Generic
             return await PagedList<T>.CreateAsync(orderedQuery, p.PageIndex, p.PageSize);
         }
 
-        private Expression<Func<T, bool>> CombineOr(
+        protected Expression<Func<T, bool>> CombineOr(
             Expression<Func<T, bool>> expr1,
             Expression<Func<T, bool>> expr2)
         {

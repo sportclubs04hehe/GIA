@@ -13,6 +13,8 @@ namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
         // Thêm thông tin đơn vị tính
         public Guid? DonViTinhId { get; set; }
         public string? TenDonViTinh { get; set; }
-        public List<HHThiTruongTreeNodeDto> Children { get; set; } = new List<HHThiTruongTreeNodeDto>();
+        
+        // Đổi tên từ Children thành MatHangCon để khớp với tên được sử dụng trong code
+        public List<HHThiTruongTreeNodeDto> MatHangCon { get; set; } = new List<HHThiTruongTreeNodeDto>();
     }
 }

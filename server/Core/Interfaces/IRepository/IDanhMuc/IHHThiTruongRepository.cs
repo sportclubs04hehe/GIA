@@ -2,6 +2,7 @@
 using Core.Interfaces.IGeneric;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Core.Interfaces.IRepository.IDanhMuc
@@ -10,15 +11,14 @@ namespace Core.Interfaces.IRepository.IDanhMuc
     {
         Task<List<Dm_HangHoaThiTruong>> GetAllParentCategoriesAsync();
         Task<List<Dm_HangHoaThiTruong>> GetHierarchicalCategoriesAsync();
-        Task<bool> DeleteWithChildrenAsync(Guid id);
         Task<Dm_HangHoaThiTruong?> GetWithChildrenAsync(Guid id);
-        
-        // Add this new method to check for duplicate code
+        Task<bool> DeleteWithChildrenAsync(Guid id);
         Task<bool> ExistsByMaInSameLevelAsync(string ma, Guid? parentId, Guid? exceptId = null);
-
-        // Add this method to the existing interface
         Task<IEnumerable<Dm_HangHoaThiTruong>> AddRangeWithValidationAsync(IEnumerable<Dm_HangHoaThiTruong> entities);
-
         Task<List<Dm_HangHoaThiTruong>> GetChildrenByParentIdAsync(Guid parentId);
+        
+        // Thêm phương thức thiếu
+        Task<List<Dm_HangHoaThiTruong>> SearchAllAsync(string searchTerm, params Expression<Func<Dm_HangHoaThiTruong, string>>[] searchFields);
+        Task<List<Dm_HangHoaThiTruong>> GetRootItemsForSearchAsync(HashSet<Guid> parentIds, List<Guid> matchingItemIds);
     }
 }

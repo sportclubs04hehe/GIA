@@ -261,5 +261,38 @@ namespace Application.ServiceImplement.DanhMuc
             var entities = await _repository.GetChildrenByParentIdAsync(parentId);
             return _mapper.Map<List<HHThiTruongTreeNodeDto>>(entities);
         }
+
+        public async Task<List<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm)
+        {
+            // Tìm tất cả items khớp với searchTerm
+            var matchingItems = await _repository.SearchAllAsync(
+                searchTerm,
+                x => x.Ma,
+                x => x.Ten
+            );
+            
+            // Thu thập tất cả parent IDs cần thiết
+            var itemIds = matchingItems.Select(x => x.Id).ToList();
+            var parentIds = new HashSet<Guid>();
+            
+            foreach (var item in matchingItems.Where(x => x.MatHangChaId.HasValue))
+            {
+                var current = item;
+                while (current.MatHangChaId.HasValue)
+                {
+                    if (parentIds.Contains(current.MatHangChaId.Value))
+                        break;
+                    
+                    parentIds.Add(current.MatHangChaId.Value);
+                    current = await _repository.GetByIdNoTrackingAsync(current.MatHangChaId.Value);
+                    
+                    if (current == null)
+                        break;
+                }
+            }
+            
+            var rootItems = await _repository.GetRootItemsForSearchAsync(parentIds, itemIds);
+            return _mapper.Map<List<HHThiTruongTreeNodeDto>>(rootItems);
+        }
     }
 }

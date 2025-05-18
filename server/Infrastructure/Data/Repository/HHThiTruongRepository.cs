@@ -3,6 +3,7 @@ using Core.Entities.Domain.DanhMuc.Enum;
 using Core.Interfaces.IRepository.IDanhMuc;
 using Infrastructure.Data.Generic;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Infrastructure.Data.Repository
 {
@@ -180,6 +181,100 @@ namespace Infrastructure.Data.Repository
                 .OrderBy(x => x.Ten)
                 .AsNoTracking()
                 .ToListAsync();
+        }
+
+        // Tìm kiếm không phân trang
+        public async Task<List<Dm_HangHoaThiTruong>> SearchAllAsync(
+            string searchTerm, 
+            params Expression<Func<Dm_HangHoaThiTruong, string>>[] searchFields)
+        {
+            var query = _dbSet.AsNoTracking()
+                             .Where(x => !x.IsDelete);
+
+            if (!string.IsNullOrWhiteSpace(searchTerm) && searchFields.Length > 0)
+            {
+                var term = searchTerm.ToLower();
+
+                Expression<Func<Dm_HangHoaThiTruong, bool>> combinedExpression = null;
+
+                foreach (var selector in searchFields)
+                {
+                    var memberExpression = selector.Body as MemberExpression;
+                    if (memberExpression == null)
+                        continue;
+
+                    string propertyName = memberExpression.Member.Name;
+
+                    var parameter = Expression.Parameter(typeof(Dm_HangHoaThiTruong), "x");
+
+                    var property = Expression.Property(parameter, propertyName);
+                    // Kiểm tra null cho phương thức ToLower
+                    var toLowerMethod = typeof(string).GetMethod("ToLower", Type.EmptyTypes);
+                    if (toLowerMethod == null)
+                        continue;
+
+                    var toLower = Expression.Call(property, toLowerMethod);
+
+                    // Kiểm tra null cho phương thức Contains
+                    var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+                    if (containsMethod == null)
+                        continue;
+
+                    var contains = Expression.Call(toLower, containsMethod, Expression.Constant(term));
+
+                    var expression = Expression.Lambda<Func<Dm_HangHoaThiTruong, bool>>(contains, parameter);
+
+                    combinedExpression = combinedExpression == null
+                        ? expression
+                        : CombineOr(combinedExpression, expression);
+                }
+
+                if (combinedExpression != null)
+                    query = query.Where(combinedExpression);
+            }
+            
+            return await query
+                .Include(x => x.DonViTinh)
+                .OrderBy(x => x.Ten)
+                .ToListAsync();
+        }
+
+        public async Task<List<Dm_HangHoaThiTruong>> GetRootItemsForSearchAsync(
+            HashSet<Guid> parentIds, List<Guid> matchingItemIds)
+        {
+            // Lấy tất cả nodes cần thiết
+            var allNodes = await _dbSet
+                .AsNoTracking()
+                .Where(x => !x.IsDelete && (parentIds.Contains(x.Id) || matchingItemIds.Contains(x.Id)))
+                .Include(x => x.DonViTinh)
+                .ToListAsync();
+            
+            // Xây dựng map cho việc tìm nhanh
+            var nodeMap = allNodes.ToDictionary(x => x.Id);
+            
+            // Danh sách các nodes gốc cần trả về
+            var rootNodes = new List<Dm_HangHoaThiTruong>();
+            
+            // Tìm và thêm các nodes gốc
+            foreach (var node in allNodes)
+            {
+                if (!node.MatHangChaId.HasValue || !nodeMap.ContainsKey(node.MatHangChaId.Value))
+                {
+                    // Đây là node gốc
+                    rootNodes.Add(node);
+                }
+                else
+                {
+                    // Đây là node con, thêm vào node cha
+                    var parent = nodeMap[node.MatHangChaId.Value];
+                    if (parent.MatHangCon == null)
+                        parent.MatHangCon = new List<Dm_HangHoaThiTruong>();
+                        
+                    parent.MatHangCon.Add(node);
+                }
+            }
+            
+            return rootNodes;
         }
     }
 }

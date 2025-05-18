@@ -9,7 +9,7 @@ namespace server.Controllers.DanhMuc
 {
     public class Dm_HHThiTruongsController : BaseApiController
     {
-        private readonly IHHThiTruongService _hhThiTruongService;
+        private readonly IHHThiTruongService _hhThiTruongService;   
         private readonly ILogger<Dm_HHThiTruongsController> _logger;
 
         public Dm_HHThiTruongsController(IHHThiTruongService hhThiTruongService, 
@@ -190,7 +190,7 @@ namespace server.Controllers.DanhMuc
         /// <summary>
         /// Xóa mặt hàng thị trường theo ID
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -309,6 +309,27 @@ namespace server.Controllers.DanhMuc
                 _logger.LogError(ex, "Error retrieving children for parent with ID: {Id}", parentId);
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy danh sách các mặt hàng con"));
+            }
+        }
+
+        /// <summary>
+        /// Tìm kiếm phân cấp (đã mở rộng các node chứa kết quả tìm kiếm)
+        /// </summary>
+        [HttpGet("search-hierarchical")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<HHThiTruongTreeNodeDto>>> SearchHierarchical([FromQuery] string searchTerm)
+        {
+            try
+            {
+                var results = await _hhThiTruongService.SearchHierarchicalAsync(searchTerm);
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error performing hierarchical search");
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi tìm kiếm"));
             }
         }
     }
