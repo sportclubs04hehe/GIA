@@ -129,10 +129,18 @@ namespace Application.ServiceImplement.DanhMuc
             return _mapper.Map<List<HHThiTruongDto>>(entities);
         }
 
-        public async Task<List<HHThiTruongTreeNodeDto>> GetHierarchicalCategoriesAsync()
+        public async Task<List<CategoryInfoDto>> GetAllCategoriesWithChildInfoAsync()
         {
-            var entities = await _repository.GetHierarchicalCategoriesAsync();
-            return _mapper.Map<List<HHThiTruongTreeNodeDto>>(entities);
+            var categoriesWithChildInfo = await _repository.GetAllCategoriesWithChildInfoAsync();
+
+            return categoriesWithChildInfo.Select(tuple => {
+                var dto = _mapper.Map<CategoryInfoDto>(tuple.Category);
+                dto.HasChildren = tuple.HasChildren;
+                // Đảm bảo các trường liên quan đến đơn vị tính luôn là null
+                dto.TenDonViTinh = null;
+                dto.DonViTinhId = null;
+                return dto;
+            }).ToList();
         }
 
         public async Task<HHThiTruongTreeNodeDto> GetWithChildrenAsync(Guid id)
@@ -142,22 +150,6 @@ namespace Application.ServiceImplement.DanhMuc
                 throw new KeyNotFoundException($"Mặt hàng có ID {id} không tồn tại");
 
             return _mapper.Map<HHThiTruongTreeNodeDto>(entity);
-        }
-
-        public async Task<PagedList<HHThiTruongDto>> SearchAsync(SearchParams searchParams)
-        {
-            var entities = await _repository.SearchAsync(
-                searchParams,
-                x => x.Ma,
-                x => x.Ten
-            );
-
-            return new PagedList<HHThiTruongDto>(
-                _mapper.Map<List<HHThiTruongDto>>(entities.ToList()),  
-                entities.TotalCount,
-                entities.CurrentPage,
-                entities.PageSize
-            );
         }
 
         public async Task<bool> IsValidCodeAsync(string ma, Guid? parentId, Guid? exceptId = null)

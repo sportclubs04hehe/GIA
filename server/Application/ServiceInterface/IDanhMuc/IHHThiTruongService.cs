@@ -14,9 +14,8 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<bool> DeleteMultipleAsync(List<Guid> ids);
         Task<PagedList<HHThiTruongDto>> GetAllAsync(PaginationParams paginationParams);
         Task<List<HHThiTruongDto>> GetAllParentCategoriesAsync();
-        Task<List<HHThiTruongTreeNodeDto>> GetHierarchicalCategoriesAsync();
+        Task<List<CategoryInfoDto>> GetAllCategoriesWithChildInfoAsync();
         Task<HHThiTruongTreeNodeDto> GetWithChildrenAsync(Guid id);
-        Task<PagedList<HHThiTruongDto>> SearchAsync(SearchParams searchParams);
         Task<bool> IsValidCodeAsync(string ma, Guid? parentId, Guid? exceptId = null);
         Task<bool> ValidateCreateDtoAsync(CreateHHThiTruongDto createDto);
         Task<bool> ValidateUpdateDtoAsync(UpdateHHThiTruongDto updateDto);

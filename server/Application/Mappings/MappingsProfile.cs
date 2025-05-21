@@ -108,6 +108,12 @@ namespace Application.Mappings
                 .ForMember(d => d.MatHangCon, o => o.MapFrom(s => s.MatHangCon.Where(c => !c.IsDelete)))
                 .ForMember(d => d.TenDonViTinh, o => o.MapFrom(s => s.DonViTinh != null ? s.DonViTinh.Ten : null))
                 .ForMember(d => d.DonViTinhId, o => o.MapFrom(s => s.DonViTinhId));
+
+            CreateMap<Dm_HangHoaThiTruong, CategoryInfoDto>()
+               .ForMember(d => d.TenMatHangCha, o => o.MapFrom(s => s.MatHangCha != null ? s.MatHangCha.Ten : null))
+               .ForMember(d => d.TenDonViTinh, o => o.MapFrom(s => (string)null))
+               .ForMember(d => d.DonViTinhId, o => o.MapFrom(s => (Guid?)null)) 
+               .ForMember(d => d.HasChildren, o => o.Ignore());
             #endregion
 
             //DonViTinh mappings

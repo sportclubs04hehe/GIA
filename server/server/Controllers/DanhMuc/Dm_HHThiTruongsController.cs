@@ -78,35 +78,24 @@ namespace server.Controllers.DanhMuc
         }
 
         /// <summary>
-        /// Lấy cấu trúc phân cấp của hàng hóa thị trường dạng cây
+        /// Lấy danh sách tất cả các nhóm hàng hóa kèm thông tin có chứa con hay không
         /// </summary>
-        [HttpGet("hierarchical")]
+        [HttpGet("categories-with-info")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<List<HHThiTruongTreeNodeDto>>> GetHierarchicalCategories()
+        public async Task<ActionResult<List<CategoryInfoDto>>> GetAllCategoriesWithChildInfo()
         {
             try
             {
-                var hierarchicalCategories = await _hhThiTruongService.GetHierarchicalCategoriesAsync();
-                return Ok(hierarchicalCategories);
+                var categories = await _hhThiTruongService.GetAllCategoriesWithChildInfoAsync();
+                return Ok(categories);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving hierarchical structure");
+                _logger.LogError(ex, "Error retrieving categories with child info");
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy cấu trúc phân cấp hàng hóa"));
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy danh sách nhóm hàng hóa"));
             }
-        }
-
-        /// <summary>
-        /// Tìm kiếm mặt hàng thị trường theo tên hoặc mã
-        /// </summary>
-        [HttpGet("search")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<PagedList<HHThiTruongDto>>> Search([FromQuery] SearchParams searchParams)
-        {
-            return await ExecutePagedAsync(() => _hhThiTruongService.SearchAsync(searchParams));
         }
 
         /// <summary>

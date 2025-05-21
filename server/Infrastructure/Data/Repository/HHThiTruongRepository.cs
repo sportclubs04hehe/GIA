@@ -32,22 +32,6 @@ namespace Infrastructure.Data.Repository
                 .ToListAsync();
         }
 
-        // Get hierarchical tree structure starting from root categories
-        public async Task<List<Dm_HangHoaThiTruong>> GetHierarchicalCategoriesAsync()
-        {
-            // Start with root categories and include children recursively
-            var rootCategories = await _dbSet
-                .Where(x => !x.IsDelete && x.MatHangChaId == null)
-                .Include(x => x.MatHangCon.Where(c => !c.IsDelete))
-                .ThenInclude(x => x.MatHangCon.Where(c => !c.IsDelete))
-                .ThenInclude(x => x.MatHangCon.Where(c => !c.IsDelete))
-                .OrderBy(x => x.Ten)
-                .AsNoTracking()
-                .ToListAsync();
-
-            return rootCategories;
-        }
-
         // Get a specific category/product with its direct children
         public async Task<Dm_HangHoaThiTruong?> GetWithChildrenAsync(Guid id)
         {
@@ -284,6 +268,33 @@ namespace Infrastructure.Data.Repository
                 query, 
                 paginationParams.PageIndex, 
                 paginationParams.PageSize);
+        }
+
+        public async Task<List<(Dm_HangHoaThiTruong Category, bool HasChildren)>> GetAllCategoriesWithChildInfoAsync()
+        {
+            // Sử dụng cách tiếp cận hiệu quả hơn, tránh các truy vấn N+1
+            var categories = await _dbSet
+                .Where(x => !x.IsDelete && x.LoaiMatHang == LoaiMatHangEnum.Nhom)
+                .Include(x => x.MatHangCha) // Vẫn giữ lại Join với mặt hàng cha để lấy tên
+                // Bỏ .Include(x => x.DonViTinh) vì mặt hàng nhóm không có đơn vị tính
+                .OrderBy(x => x.Ten)
+                .AsNoTracking()
+                .ToListAsync();
+            
+            // Lấy tất cả ID của các nhóm có con trong một truy vấn duy nhất
+            var categoryIdsWithChildren = await _dbSet
+                .Where(x => !x.IsDelete && x.MatHangChaId.HasValue)
+                .Select(x => x.MatHangChaId.Value)
+                .Distinct()
+                .ToListAsync();
+            
+            // Tạo một HashSet cho việc kiểm tra hiệu quả
+            var categoryIdsWithChildrenSet = new HashSet<Guid>(categoryIdsWithChildren);
+            
+            // Ghép các kết quả lại
+            return categories
+                .Select(c => (c, categoryIdsWithChildrenSet.Contains(c.Id)))
+                .ToList();
         }
     }
 }
