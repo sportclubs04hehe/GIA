@@ -21,5 +21,6 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         Task<List<Dm_HangHoaThiTruong>> SearchAllAsync(string searchTerm, params Expression<Func<Dm_HangHoaThiTruong, string>>[] searchFields);
         Task<List<Dm_HangHoaThiTruong>> GetRootItemsForSearchAsync(HashSet<Guid> parentIds, List<Guid> matchingItemIds);
         Task<List<(Dm_HangHoaThiTruong Category, bool HasChildren)>> GetAllCategoriesWithChildInfoAsync();
+        Task<Dm_HangHoaThiTruong> GetByIdWithRelationsAsync(Guid id);
     }
 }

@@ -99,7 +99,7 @@ namespace Application.ServiceImplement.DanhMuc
             );
         }
         public async Task<DonViTinhsDto> GetByIdAsync(Guid id) =>
-        _mapper.Map<DonViTinhsDto>(await _repository.GetByIdAsync(id));
+        _mapper.Map<DonViTinhsDto>(await _repository.GetByIdNoTrackingAsync(id));
 
 
         public async Task<DonViTinhsDto> GetByMaAsync(string ma)

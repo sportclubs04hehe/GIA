@@ -143,15 +143,6 @@ namespace Application.ServiceImplement.DanhMuc
             }).ToList();
         }
 
-        public async Task<HHThiTruongTreeNodeDto> GetWithChildrenAsync(Guid id)
-        {
-            var entity = await _repository.GetWithChildrenAsync(id);
-            if (entity == null)
-                throw new KeyNotFoundException($"Mặt hàng có ID {id} không tồn tại");
-
-            return _mapper.Map<HHThiTruongTreeNodeDto>(entity);
-        }
-
         public async Task<bool> IsValidCodeAsync(string ma, Guid? parentId, Guid? exceptId = null)
         {
             return !await _repository.ExistsByMaInSameLevelAsync(ma, parentId, exceptId);
@@ -292,5 +283,8 @@ namespace Application.ServiceImplement.DanhMuc
                 entities.PageSize
             );
         }
+
+        public async Task<HHThiTruongDto> GetByIdAsync(Guid id) =>
+            _mapper.Map<HHThiTruongDto>(await _repository.GetByIdWithRelationsAsync(id));
     }
 }

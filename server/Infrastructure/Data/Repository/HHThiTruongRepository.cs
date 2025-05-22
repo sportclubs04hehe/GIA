@@ -296,5 +296,15 @@ namespace Infrastructure.Data.Repository
                 .Select(c => (c, categoryIdsWithChildrenSet.Contains(c.Id)))
                 .ToList();
         }
+
+        public async Task<Dm_HangHoaThiTruong> GetByIdWithRelationsAsync(Guid id)
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .Where(x => x.Id == id && !x.IsDelete)
+                .Include(x => x.DonViTinh)
+                .Include(x => x.MatHangCha)
+                .FirstOrDefaultAsync();
+        }
     }
 }

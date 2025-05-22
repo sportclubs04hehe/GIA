@@ -26,11 +26,11 @@ namespace server.Controllers.DanhMuc
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<HHThiTruongTreeNodeDto>> GetById(Guid id)
+        public async Task<ActionResult<HHThiTruongDto>> GetById(Guid id)
         {
             try
             {
-                var matHang = await _hhThiTruongService.GetWithChildrenAsync(id);
+                var matHang = await _hhThiTruongService.GetByIdAsync(id);
                 return Ok(matHang);
             }
             catch (KeyNotFoundException ex)
