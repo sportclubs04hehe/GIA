@@ -8,6 +8,8 @@ namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
         public Guid Id { get; set; }
         public string Ma { get; set; }
         public string Ten { get; set; }
+        public string GhiChu { get; set; }
+        public string DacTinh { get; set; }
         public int LoaiMatHang { get; set; }
         public Guid? MatHangChaId { get; set; }
         // Thêm thông tin đơn vị tính

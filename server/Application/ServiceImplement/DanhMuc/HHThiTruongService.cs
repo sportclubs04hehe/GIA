@@ -28,16 +28,17 @@ namespace Application.ServiceImplement.DanhMuc
             
             var entity = _mapper.Map<Dm_HangHoaThiTruong>(createDto);
 
-            // Set LoaiMatHang based on whether it has DonViTinhId (is a product or category)
-            entity.LoaiMatHang = createDto.DonViTinhId.HasValue
-                ? LoaiMatHangEnum.HangHoa
-                : LoaiMatHangEnum.Nhom;
-
-            // If it's a category (not a product), clear product-specific fields
+            // Ưu tiên sử dụng LoaiMatHang từ client
+            // Nếu là nhóm (LoaiMatHang = 0), xóa thông tin hàng hóa
             if (entity.LoaiMatHang == LoaiMatHangEnum.Nhom)
             {
                 entity.DonViTinhId = null;
                 entity.DacTinh = null;
+            }
+            // Nếu là hàng hóa (LoaiMatHang = 1), đảm bảo có đơn vị tính
+            else if (entity.LoaiMatHang == LoaiMatHangEnum.HangHoa && !entity.DonViTinhId.HasValue)
+            {
+                throw new ArgumentException("Mặt hàng thuộc loại hàng hóa phải có đơn vị tính");
             }
 
             var result = await _repository.AddAsync(entity);
@@ -46,7 +47,7 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<HHThiTruongDto> UpdateAsync(UpdateHHThiTruongDto updateDto)
         {
-            var existingEntity = await _repository.GetByIdAsync(updateDto.Id);
+            var existingEntity = await _repository.GetByIdWithRelationsAsync(updateDto.Id);
             if (existingEntity == null)
                 throw new KeyNotFoundException($"Mặt hàng có ID {updateDto.Id} không tồn tại");
 
@@ -55,22 +56,25 @@ namespace Application.ServiceImplement.DanhMuc
             
             var entity = _mapper.Map<Dm_HangHoaThiTruong>(updateDto);
 
-            // Set LoaiMatHang based on whether it has DonViTinhId
-            entity.LoaiMatHang = updateDto.DonViTinhId.HasValue
-                ? LoaiMatHangEnum.HangHoa
-                : LoaiMatHangEnum.Nhom;
+            // Ưu tiên sử dụng LoaiMatHang từ client
+            // Không tự đổi LoaiMatHang dựa vào DonViTinhId
 
-            // If changing from product to category, clear product-specific fields
+            // Nếu là nhóm (LoaiMatHang = 0), xóa thông tin hàng hóa
             if (entity.LoaiMatHang == LoaiMatHangEnum.Nhom)
             {
                 entity.DonViTinhId = null;
                 entity.DacTinh = null;
             }
+            // Nếu là hàng hóa (LoaiMatHang = 1), đảm bảo có đơn vị tính
+            else if (entity.LoaiMatHang == LoaiMatHangEnum.HangHoa && !entity.DonViTinhId.HasValue)
+            {
+                throw new ArgumentException("Mặt hàng thuộc loại hàng hóa phải có đơn vị tính");
+            }
 
             await _repository.UpdateAsync(entity);
 
             // Get updated entity with relationships
-            var updatedEntity = await _repository.GetByIdNoTrackingAsync(entity.Id);
+            var updatedEntity = await _repository.GetByIdWithRelationsAsync(entity.Id);
             return _mapper.Map<HHThiTruongDto>(updatedEntity);
         }
 
@@ -217,13 +221,12 @@ namespace Application.ServiceImplement.DanhMuc
             {
                 var entity = _mapper.Map<Dm_HangHoaThiTruong>(dto);
                 
-                // If it's a category (LoaiMatHang = 0), ensure product-specific fields are cleared
+                // Xử lý theo loại mặt hàng từ input
                 if (dto.LoaiMatHang == LoaiMatHangEnum.Nhom)
                 {
                     entity.DonViTinhId = null;
                     entity.DacTinh = null;
                 }
-                // If it's a product (LoaiMatHang = 1), ensure required fields are present
                 else if (dto.LoaiMatHang == LoaiMatHangEnum.HangHoa && !dto.DonViTinhId.HasValue)
                 {
                     throw new ArgumentException($"Mặt hàng '{dto.Ten}' có loại là hàng hóa nhưng không có đơn vị tính");
