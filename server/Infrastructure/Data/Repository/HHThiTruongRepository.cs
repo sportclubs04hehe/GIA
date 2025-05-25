@@ -44,6 +44,49 @@ namespace Infrastructure.Data.Repository
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// Xóa một mặt hàng và tất cả các mặt hàng con của nó
+        /// </summary>
+        /// <param name="id">ID mặt hàng cần xóa</param>
+        /// <param name="useExternalTransaction">Có sử dụng transaction bên ngoài hay không</param>
+        public async Task<bool> DeleteWithChildrenAsync(Guid id, bool useExternalTransaction = false)
+        {
+            // Chỉ tạo transaction mới khi không sử dụng transaction bên ngoài
+            if (!useExternalTransaction)
+            {
+                using var transaction = await BeginTransactionAsync();
+                try
+                {
+                    var result = await DeleteWithChildrenInternalAsync(id);
+                    await transaction.CommitAsync();
+                    return result;
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            else
+            {
+                // Sử dụng transaction bên ngoài, không tạo mới
+                return await DeleteWithChildrenInternalAsync(id);
+            }
+        }
+
+        /// <summary>
+        /// Thực hiện xóa mặt hàng và con mà không quản lý transaction
+        /// </summary>
+        private async Task<bool> DeleteWithChildrenInternalAsync(Guid id)
+        {
+            var entity = await GetWithChildrenAsync(id);
+            if (entity == null) return false;
+            
+            await DeleteEntityWithChildren(entity);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         // Delete an item and all its children recursively
         public async Task<bool> DeleteWithChildrenAsync(Guid id)
         {

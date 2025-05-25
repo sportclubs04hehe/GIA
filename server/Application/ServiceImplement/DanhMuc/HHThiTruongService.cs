@@ -5,6 +5,7 @@ using Core.Entities.Domain.DanhMuc;
 using Core.Entities.Domain.DanhMuc.Enum;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
+using Infrastructure.Data.Repository;
 
 namespace Application.ServiceImplement.DanhMuc
 {
@@ -83,6 +84,9 @@ namespace Application.ServiceImplement.DanhMuc
             return await _repository.DeleteWithChildrenAsync(id);
         }
 
+        /// <summary>
+        /// Xóa nhiều mặt hàng cùng lúc
+        /// </summary>
         public async Task<bool> DeleteMultipleAsync(List<Guid> ids)
         {
             using var transaction = await _repository.BeginTransactionAsync();
@@ -91,7 +95,8 @@ namespace Application.ServiceImplement.DanhMuc
                 bool success = true;
                 foreach (var id in ids)
                 {
-                    var result = await _repository.DeleteWithChildrenAsync(id);
+                    // Sử dụng transaction bên ngoài
+                    var result = await ((HHThiTruongRepository)_repository).DeleteWithChildrenAsync(id, useExternalTransaction: true);
                     if (!result)
                     {
                         success = false;
@@ -109,7 +114,7 @@ namespace Application.ServiceImplement.DanhMuc
                     return false;
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 throw;
