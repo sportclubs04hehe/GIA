@@ -22,5 +22,9 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<List<HHThiTruongDto>> CreateManyAsync(CreateManyHHThiTruongDto createDto);
         Task<List<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm);
         Task<PagedList<HHThiTruongTreeNodeDto>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams);
+        /// <summary>
+        /// Lấy đường dẫn đầy đủ từ gốc đến node bao gồm các node con cần thiết
+        /// </summary>
+        Task<List<HHThiTruongTreeNodeDto>> GetFullPathWithChildrenAsync(Guid targetNodeId, Guid? newItemId = null);
     }
 }

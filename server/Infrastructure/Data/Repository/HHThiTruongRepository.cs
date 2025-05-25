@@ -306,5 +306,116 @@ namespace Infrastructure.Data.Repository
                 .Include(x => x.MatHangCha)
                 .FirstOrDefaultAsync();
         }
+
+        /// <summary>
+        /// Lấy các node gốc với các node con cần thiết theo đường dẫn, bao gồm tất cả anh em của node mới
+        /// </summary>
+        public async Task<List<Dm_HangHoaThiTruong>> GetRootNodesWithRequiredChildrenAsync(List<Guid> pathIds, Guid? newItemId = null)
+        {
+            if (pathIds == null || !pathIds.Any())
+                return new List<Dm_HangHoaThiTruong>();
+
+            // Lấy id của node gốc
+            var rootId = pathIds.First();
+
+            // Tìm node gốc trong cây
+            var rootNodes = await _dbSet
+                .Where(x => x.Id == rootId && !x.IsDelete)
+                .Include(x => x.DonViTinh)
+                .ToListAsync();
+
+            if (!rootNodes.Any())
+                return new List<Dm_HangHoaThiTruong>();
+
+            // Xây dựng cây với chỉ các node cần thiết theo đường dẫn
+            var result = new List<Dm_HangHoaThiTruong>(rootNodes);
+
+            // Lưu trữ ID của node cha chứa node mới để sau này tải tất cả con của nó
+            Guid? parentIdOfNewItem = null;
+
+            // Duyệt qua từng cấp trong đường dẫn để xây dựng cây
+            for (int i = 0; i < pathIds.Count - 1; i++)
+            {
+                var currentId = pathIds[i];
+                var nextId = pathIds[i + 1];
+
+                // Tìm node hiện tại trong kết quả
+                var currentNode = FindNodeById(result, currentId);
+                if (currentNode == null)
+                    continue;
+
+                // Nếu đây là node cuối cùng trong đường dẫn, lưu lại ID để tải tất cả con
+                if (i == pathIds.Count - 2)
+                {
+                    parentIdOfNewItem = currentId;
+                }
+
+                // Tìm tất cả các node con trực tiếp của node hiện tại trong đường dẫn
+                var childNodes = await _dbSet
+                    .Where(x => x.MatHangChaId == currentId && !x.IsDelete && x.Id == nextId)
+                    .Include(x => x.DonViTinh)
+                    .ToListAsync();
+
+                // Đảm bảo chỉ thêm mới node chưa có
+                foreach (var child in childNodes)
+                {
+                    if (currentNode.MatHangCon == null)
+                        currentNode.MatHangCon = new List<Dm_HangHoaThiTruong>();
+
+                    if (!currentNode.MatHangCon.Any(x => x.Id == child.Id))
+                        currentNode.MatHangCon.Add(child);
+                }
+            }
+
+            // Lấy node cha cuối cùng trong đường dẫn
+            var lastId = pathIds.Last();
+            var lastNode = FindNodeById(result, lastId);
+
+            if (lastNode != null)
+            {
+                // Tải tất cả các node con của node cha cuối cùng
+                var childrenOfLastNode = await _dbSet
+                    .Where(x => x.MatHangChaId == lastId && !x.IsDelete)
+                    .Include(x => x.DonViTinh)
+                    .ToListAsync();
+
+                if (lastNode.MatHangCon == null)
+                    lastNode.MatHangCon = new List<Dm_HangHoaThiTruong>();
+
+                foreach (var child in childrenOfLastNode)
+                {
+                    if (!lastNode.MatHangCon.Any(x => x.Id == child.Id))
+                        lastNode.MatHangCon.Add(child);
+                }
+
+                // Đánh dấu node mới nếu có
+                if (newItemId.HasValue && lastNode.MatHangCon.Any(x => x.Id == newItemId))
+                {
+                    // Không cần làm gì thêm vì tất cả con đã được tải
+                    // Và controller sẽ tự động chọn newItemId
+                }
+            }
+
+            return result;
+        }
+
+        // Helper method to find a node in the tree by ID
+        private Dm_HangHoaThiTruong FindNodeById(List<Dm_HangHoaThiTruong> nodes, Guid id)
+        {
+            foreach (var node in nodes)
+            {
+                if (node.Id == id)
+                    return node;
+
+                if (node.MatHangCon != null && node.MatHangCon.Any())
+                {
+                    var found = FindNodeById(node.MatHangCon.ToList(), id);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            return null;
+        }
     }
 }

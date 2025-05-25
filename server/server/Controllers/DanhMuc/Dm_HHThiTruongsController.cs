@@ -316,5 +316,33 @@ namespace server.Controllers.DanhMuc
                     ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi tìm kiếm"));
             }
         }
+
+        /// <summary>
+        /// Lấy đường dẫn đầy đủ từ gốc đến node bao gồm các node con cần thiết
+        /// </summary>
+        [HttpGet("full-path/{targetNodeId:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<HHThiTruongTreeNodeDto>>> GetFullPathWithChildren(
+            Guid targetNodeId,
+            [FromQuery] Guid? newItemId = null)
+        {
+            try
+            {
+                var result = await _hhThiTruongService.GetFullPathWithChildrenAsync(targetNodeId, newItemId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse.NotFound(THONGBAO, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy đường dẫn đầy đủ đến node có ID: {Id}", targetNodeId);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy đường dẫn đầy đủ"));
+            }
+        }
     }
 }

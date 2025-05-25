@@ -289,5 +289,29 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<HHThiTruongDto> GetByIdAsync(Guid id) =>
             _mapper.Map<HHThiTruongDto>(await _repository.GetByIdWithRelationsAsync(id));
+
+
+        /// <summary>
+        /// Lấy đường dẫn đầy đủ từ gốc đến node bao gồm các node con và các node anh em
+        /// </summary>
+        public async Task<List<HHThiTruongTreeNodeDto>> GetFullPathWithChildrenAsync(Guid targetNodeId, Guid? newItemId = null)
+        {
+            // Kiểm tra sự tồn tại của node đích
+            var targetNode = await _repository.GetByIdNoTrackingAsync(targetNodeId);
+            if (targetNode == null)
+                throw new KeyNotFoundException($"Mặt hàng có ID {targetNodeId} không tồn tại");
+
+            // Lấy đường dẫn dạng Guid từ gốc đến node đích
+            var pathIds = await _repository.GetPathToRootAsync(targetNodeId);
+
+            if (pathIds.Count == 0)
+                return new List<HHThiTruongTreeNodeDto>();
+
+            // Chuẩn bị kết quả với node gốc và tất cả các node con cần thiết
+            var rootNodes = await _repository.GetRootNodesWithRequiredChildrenAsync(pathIds, newItemId);
+
+            // Ánh xạ kết quả sang DTO
+            return _mapper.Map<List<HHThiTruongTreeNodeDto>>(rootNodes);
+        }
     }
 }
