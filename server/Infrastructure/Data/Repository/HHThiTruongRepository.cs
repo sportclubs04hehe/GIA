@@ -308,6 +308,60 @@ namespace Infrastructure.Data.Repository
         }
 
         /// <summary>
+        /// Lấy đường dẫn từ gốc đến node theo ID
+        /// </summary>
+        public async Task<List<Guid>> GetPathToRootAsync(Guid nodeId)
+        {
+            var path = new List<Guid>();
+            var currentNodeId = nodeId;
+
+            // Cache lưu trữ các node đã truy vấn để tránh truy vấn trùng lặp
+            var nodeCache = new Dictionary<Guid, Guid?>();
+
+            // Lấy đường dẫn từ node hiện tại lên đến gốc
+            while (true)
+            {
+                // Kiểm tra trong cache trước khi truy vấn database
+                if (nodeCache.ContainsKey(currentNodeId))
+                {
+                    path.Add(currentNodeId);
+
+                    if (!nodeCache[currentNodeId].HasValue)
+                        break; // Đã đến node gốc
+
+                    currentNodeId = nodeCache[currentNodeId].Value;
+                }
+                else
+                {
+                    // Truy vấn chỉ lấy thông tin ID và parent ID để giảm tải dữ liệu
+                    var node = await _dbSet
+                        .AsNoTracking()
+                        .Where(x => x.Id == currentNodeId && !x.IsDelete)
+                        .Select(x => new { x.Id, x.MatHangChaId })
+                        .FirstOrDefaultAsync();
+
+                    if (node == null)
+                        break;
+
+                    // Lưu vào cache
+                    nodeCache[node.Id] = node.MatHangChaId;
+
+                    path.Add(node.Id);
+
+                    if (!node.MatHangChaId.HasValue)
+                        break; // Đã đến node gốc
+
+                    currentNodeId = node.MatHangChaId.Value;
+                }
+            }
+
+            // Đảo ngược để có thứ tự từ gốc đến node
+            path.Reverse();
+
+            return path;
+        }
+
+        /// <summary>
         /// Lấy các node gốc với các node con cần thiết theo đường dẫn, bao gồm tất cả anh em của node mới
         /// </summary>
         public async Task<List<Dm_HangHoaThiTruong>> GetRootNodesWithRequiredChildrenAsync(List<Guid> pathIds, Guid? newItemId = null)

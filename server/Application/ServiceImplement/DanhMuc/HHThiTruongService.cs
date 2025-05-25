@@ -290,7 +290,6 @@ namespace Application.ServiceImplement.DanhMuc
         public async Task<HHThiTruongDto> GetByIdAsync(Guid id) =>
             _mapper.Map<HHThiTruongDto>(await _repository.GetByIdWithRelationsAsync(id));
 
-
         /// <summary>
         /// Lấy đường dẫn đầy đủ từ gốc đến node bao gồm các node con và các node anh em
         /// </summary>
