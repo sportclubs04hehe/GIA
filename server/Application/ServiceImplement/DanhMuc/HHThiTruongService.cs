@@ -247,19 +247,30 @@ namespace Application.ServiceImplement.DanhMuc
             return _mapper.Map<List<HHThiTruongDto>>(result);
         }
 
-        public async Task<List<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm)
+        public async Task<PagedList<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm, PaginationParams paginationParams)
         {
-            // Tìm tất cả items khớp với searchTerm
-            var matchingItems = await _repository.SearchAllAsync(
+            // Tìm tất cả items khớp với searchTerm có phân trang
+            var matchingItems = await _repository.SearchAllPagedAsync(
                 searchTerm,
+                paginationParams,
                 x => x.Ma,
                 x => x.Ten
             );
-            
+
+            if (matchingItems.Count == 0)
+            {
+                return new PagedList<HHThiTruongTreeNodeDto>(
+                    new List<HHThiTruongTreeNodeDto>(),
+                    0,
+                    paginationParams.PageIndex,
+                    paginationParams.PageSize
+                );
+            }
+
             // Thu thập tất cả parent IDs cần thiết
             var itemIds = matchingItems.Select(x => x.Id).ToList();
             var parentIds = new HashSet<Guid>();
-            
+
             foreach (var item in matchingItems.Where(x => x.MatHangChaId.HasValue))
             {
                 var current = item;
@@ -267,17 +278,26 @@ namespace Application.ServiceImplement.DanhMuc
                 {
                     if (parentIds.Contains(current.MatHangChaId.Value))
                         break;
-                    
+
                     parentIds.Add(current.MatHangChaId.Value);
                     current = await _repository.GetByIdNoTrackingAsync(current.MatHangChaId.Value);
-                    
+
                     if (current == null)
                         break;
                 }
             }
-            
+
+            // Lấy cấu trúc cây với các node tìm thấy
             var rootItems = await _repository.GetRootItemsForSearchAsync(parentIds, itemIds);
-            return _mapper.Map<List<HHThiTruongTreeNodeDto>>(rootItems);
+            var treeNodes = _mapper.Map<List<HHThiTruongTreeNodeDto>>(rootItems);
+
+            // Trả về PagedList từ kết quả đã có
+            return new PagedList<HHThiTruongTreeNodeDto>(
+                treeNodes,
+                matchingItems.TotalCount,
+                matchingItems.CurrentPage,
+                matchingItems.PageSize
+            );
         }
 
         public async Task<PagedList<HHThiTruongTreeNodeDto>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams)

@@ -201,10 +201,10 @@ namespace Infrastructure.Data.Repository
             }
         }
 
-        // Tìm kiếm không phân trang
-        public async Task<List<Dm_HangHoaThiTruong>> SearchAllAsync(
-            string searchTerm, 
-            params Expression<Func<Dm_HangHoaThiTruong, string>>[] searchFields)
+        public async Task<PagedList<Dm_HangHoaThiTruong>> SearchAllPagedAsync(
+    string searchTerm,
+    PaginationParams paginationParams,
+    params Expression<Func<Dm_HangHoaThiTruong, string>>[] searchFields)
         {
             var query = _dbSet.AsNoTracking()
                              .Where(x => !x.IsDelete);
@@ -224,22 +224,17 @@ namespace Infrastructure.Data.Repository
                     string propertyName = memberExpression.Member.Name;
 
                     var parameter = Expression.Parameter(typeof(Dm_HangHoaThiTruong), "x");
-
                     var property = Expression.Property(parameter, propertyName);
-                    // Kiểm tra null cho phương thức ToLower
                     var toLowerMethod = typeof(string).GetMethod("ToLower", Type.EmptyTypes);
                     if (toLowerMethod == null)
                         continue;
 
                     var toLower = Expression.Call(property, toLowerMethod);
-
-                    // Kiểm tra null cho phương thức Contains
                     var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
                     if (containsMethod == null)
                         continue;
 
                     var contains = Expression.Call(toLower, containsMethod, Expression.Constant(term));
-
                     var expression = Expression.Lambda<Func<Dm_HangHoaThiTruong, bool>>(contains, parameter);
 
                     combinedExpression = combinedExpression == null
@@ -250,11 +245,17 @@ namespace Infrastructure.Data.Repository
                 if (combinedExpression != null)
                     query = query.Where(combinedExpression);
             }
-            
-            return await query
-                .Include(x => x.DonViTinh)
-                .OrderBy(x => x.Ten)
-                .ToListAsync();
+
+            // Áp dụng sắp xếp
+            query = string.IsNullOrEmpty(paginationParams.OrderBy)
+                ? query.OrderBy(x => x.Ten)
+                : query.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
+
+            // Trả về kết quả có phân trang
+            return await PagedList<Dm_HangHoaThiTruong>.CreateAsync(
+                query.Include(x => x.DonViTinh),
+                paginationParams.PageIndex,
+                paginationParams.PageSize);
         }
 
         public async Task<List<Dm_HangHoaThiTruong>> GetRootItemsForSearchAsync(

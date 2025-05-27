@@ -20,7 +20,7 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<bool> ValidateCreateDtoAsync(CreateHHThiTruongDto createDto);
         Task<bool> ValidateUpdateDtoAsync(UpdateHHThiTruongDto updateDto);
         Task<List<HHThiTruongDto>> CreateManyAsync(CreateManyHHThiTruongDto createDto);
-        Task<List<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm);
+        Task<PagedList<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm, PaginationParams paginationParams);
         Task<PagedList<HHThiTruongTreeNodeDto>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams);
         /// <summary>
         /// Lấy đường dẫn đầy đủ từ gốc đến node bao gồm các node con cần thiết

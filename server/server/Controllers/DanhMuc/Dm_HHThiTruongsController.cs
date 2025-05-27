@@ -297,16 +297,35 @@ namespace server.Controllers.DanhMuc
         }
 
         /// <summary>
-        /// Tìm kiếm phân cấp (đã mở rộng các node chứa kết quả tìm kiếm)
+        /// Tìm kiếm phân cấp với phân trang (đã mở rộng các node chứa kết quả tìm kiếm)
         /// </summary>
         [HttpGet("search-hierarchical")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<List<HHThiTruongTreeNodeDto>>> SearchHierarchical([FromQuery] string searchTerm)
+        public async Task<ActionResult<PagedList<HHThiTruongTreeNodeDto>>> SearchHierarchical(
+            [FromQuery] string searchTerm,
+            [FromQuery] PaginationParams paginationParams)
         {
             try
             {
-                var results = await _hhThiTruongService.SearchHierarchicalAsync(searchTerm);
+                if (string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    return BadRequest(ApiResponse.BadRequest(THONGBAO, "Cần nhập từ khóa tìm kiếm"));
+                }
+
+                // Giới hạn kích thước trang tối đa là 100 bản ghi 
+                if (paginationParams.PageSize > 100)
+                    paginationParams.PageSize = 100;
+
+                var results = await _hhThiTruongService.SearchHierarchicalAsync(searchTerm, paginationParams);
+
+                // Thiết lập header phân trang
+                Response.AddPaginationHeader(
+                    results.CurrentPage,
+                    results.PageSize,
+                    results.TotalCount,
+                    results.TotalPages);
+
                 return Ok(results);
             }
             catch (Exception ex)
