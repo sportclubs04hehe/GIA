@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto;
+using Application.DTOs.DanhMuc.Helpers;
 using Application.ServiceInterface.IDanhMuc;
 using Core.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -314,8 +315,8 @@ namespace server.Controllers.DanhMuc
                 }
 
                 // Giới hạn kích thước trang tối đa là 100 bản ghi 
-                if (paginationParams.PageSize > 100)
-                    paginationParams.PageSize = 100;
+                if (paginationParams.PageSize > 15)
+                    paginationParams.PageSize = 15;
 
                 var results = await _hhThiTruongService.SearchHierarchicalAsync(searchTerm, paginationParams);
 
@@ -361,6 +362,153 @@ namespace server.Controllers.DanhMuc
                 _logger.LogError(ex, "Lỗi khi lấy đường dẫn đầy đủ đến node có ID: {Id}", targetNodeId);
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy đường dẫn đầy đủ"));
+            }
+        }
+
+        /// <summary>
+        /// Import mặt hàng thị trường từ Excel
+        /// </summary>
+        [HttpPost("import-from-excel")]
+        [ProducesResponseType(typeof(ApiResponse<List<HHThiTruongDto>>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<HHThiTruongDto>>>> ImportFromExcel(
+            [FromBody] HHThiTruongBatchImportDto importDto)
+        {
+            if (importDto == null || !importDto.Items.Any())
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Danh sách mặt hàng không được để trống"));
+
+            if (!importDto.MatHangChaId.HasValue)
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Cần chọn nhóm cha cho các mặt hàng import"));
+
+            try
+            {
+                var (isSuccess, importedItems, errors) = await _hhThiTruongService.ImportFromExcelAsync(importDto);
+
+                if (!isSuccess && errors.Any())
+                {
+                    return BadRequest(
+                        ApiResponse<List<HHThiTruongDto>>.BadRequest(
+                            title: THONGBAO,
+                            message: "Có lỗi xảy ra khi import mặt hàng",
+                            errors: new
+                            {
+                                ErrorMessages = errors,
+                                SuccessfullyImported = importedItems.Count
+                            }
+                        )
+                    );
+                }
+
+                _logger.LogInformation("Import Excel successful. Total items: {Count}", importedItems.Count);
+                if (errors.Any() && importedItems.Any())
+                {
+                    return StatusCode(
+                        StatusCodes.Status207MultiStatus,
+                        ApiResponse<List<HHThiTruongDto>>.PartialSuccess(
+                            data: importedItems,
+                            title: "Import thành công một phần",
+                            message: $"Đã import thành công {importedItems.Count} mặt hàng, {errors.Count} lỗi",
+                            errors: errors
+                        )
+                    );
+                }
+
+                // Trường hợp thành công hoàn toàn
+                return StatusCode(
+                    StatusCodes.Status201Created,
+                    ApiResponse<List<HHThiTruongDto>>.Created(
+                        data: importedItems,
+                        title: THONGBAO,
+                        message: $"Đã import thành công {importedItems.Count} mặt hàng"
+                    )
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(ex, "Invalid argument when importing products from Excel");
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error importing items from Excel");
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Đã có lỗi xảy ra khi import mặt hàng thị trường từ Excel")
+                );
+            }
+        }
+
+        /// <summary>
+        /// Kiểm tra mã mặt hàng đã tồn tại trong cùng nhóm hay chưa
+        /// </summary>
+        [HttpGet("validate-code")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<CodeValidationResult>>> ValidateCode(
+            [FromQuery] string ma,
+            [FromQuery] Guid? parentId = null,
+            [FromQuery] Guid? exceptId = null)
+        {
+            if (string.IsNullOrWhiteSpace(ma))
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Mã không được để trống"));
+
+            try
+            {
+                var result = await _hhThiTruongService.ValidateCodeAsync(ma, parentId, exceptId);
+                
+                return Ok(ApiResponse<CodeValidationResult>.Success(
+                    data: result,
+                    title: THONGBAO,
+                    message: result.IsValid 
+                        ? "Mã hợp lệ" 
+                        : "Mã không hợp lệ"
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi kiểm tra mã '{Code}' cho nhóm ID: {ParentId}", ma, parentId);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi kiểm tra mã mặt hàng"));
+            }
+        }
+
+        /// <summary>
+        /// Kiểm tra nhiều mã mặt hàng cùng lúc trong cùng nhóm
+        /// </summary>
+        [HttpPost("validate-multiple-codes")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<CodeValidationResult>>>> ValidateMultipleCodes(
+            [FromBody] MultipleCodeValidationRequestDto request)
+        {
+            if (request == null || request.Codes == null || !request.Codes.Any())
+            {
+                return BadRequest(ApiResponse.BadRequest(THONGBAO, "Danh sách mã cần kiểm tra không được để trống"));
+            }
+
+            try
+            {
+                var results = await _hhThiTruongService.ValidateMultipleCodesAsync(request.Codes, request.ParentId);
+
+                // Đếm số mã hợp lệ
+                int validCount = results.Count(r => r.IsValid);
+
+                return Ok(ApiResponse<List<CodeValidationResult>>.Success(
+                    data: results,
+                    title: THONGBAO,
+                    message: validCount == results.Count
+                        ? "Tất cả mã đều hợp lệ"
+                        : $"Có {results.Count - validCount}/{results.Count} mã không hợp lệ"
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi kiểm tra nhiều mã cho nhóm ID: {ParentId}", request.ParentId);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi kiểm tra mã mặt hàng"));
             }
         }
     }

@@ -26,5 +26,15 @@ namespace Application.ServiceInterface.IDanhMuc
         /// Lấy đường dẫn đầy đủ từ gốc đến node bao gồm các node con cần thiết
         /// </summary>
         Task<List<HHThiTruongTreeNodeDto>> GetFullPathWithChildrenAsync(Guid targetNodeId, Guid? newItemId = null);
+        Task<(bool IsSuccess, List<HHThiTruongDto> ImportedItems, List<string> Errors)> ImportFromExcelAsync(
+            HHThiTruongBatchImportDto importDto);
+        Task<CodeValidationResult> ValidateCodeAsync(string ma, Guid? parentId = null, Guid? exceptId = null);
+        /// <summary>
+        /// Kiểm tra nhiều mã mặt hàng cùng lúc
+        /// </summary>
+        /// <param name="codes">Danh sách mã cần kiểm tra</param>
+        /// <param name="parentId">ID nhóm cha (null nếu là cấp cao nhất)</param>
+        /// <returns>Danh sách kết quả kiểm tra cho mỗi mã</returns>
+        Task<List<CodeValidationResult>> ValidateMultipleCodesAsync(List<string> codes, Guid? parentId = null);
     }
 }

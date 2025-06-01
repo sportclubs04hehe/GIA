@@ -138,23 +138,6 @@ namespace Infrastructure.Data.Repository
             entity.ModifiedDate = DateTime.UtcNow;
         }
 
-        public async Task<bool> ExistsByMaInSameLevelAsync(string ma, Guid? parentId, Guid? exceptId = null)
-        {
-            // Query items at the same level (same parent) with the same code
-            var query = _dbSet
-                .Where(x => !x.IsDelete)
-                .Where(x => x.Ma == ma)
-                .Where(x => x.MatHangChaId == parentId);
-
-            // If we're updating an existing item, exclude it from the check
-            if (exceptId.HasValue)
-            {
-                query = query.Where(x => x.Id != exceptId.Value);
-            }
-
-            return await query.AnyAsync();
-        }
-
         // Add this method to the existing repository class
         public async Task<IEnumerable<Dm_HangHoaThiTruong>> AddRangeWithValidationAsync(IEnumerable<Dm_HangHoaThiTruong> entities)
         {
@@ -202,9 +185,9 @@ namespace Infrastructure.Data.Repository
         }
 
         public async Task<PagedList<Dm_HangHoaThiTruong>> SearchAllPagedAsync(
-    string searchTerm,
-    PaginationParams paginationParams,
-    params Expression<Func<Dm_HangHoaThiTruong, string>>[] searchFields)
+            string searchTerm,
+            PaginationParams paginationParams,
+            params Expression<Func<Dm_HangHoaThiTruong, string>>[] searchFields)
         {
             var query = _dbSet.AsNoTracking()
                              .Where(x => !x.IsDelete);
@@ -514,6 +497,46 @@ namespace Infrastructure.Data.Repository
             }
 
             return null;
+        }
+
+        // nhiều mã tồn tại trong cùng một nhóm
+        public async Task<List<string>> GetExistingCodesInSameLevelAsync(List<string> codes, Guid? parentId)
+        {
+            if (codes == null || !codes.Any())
+                return new List<string>();
+
+            // Lọc và chuẩn hóa danh sách các mã không rỗng
+            var validCodes = codes.Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().ToList();
+
+            // Nếu không có mã hợp lệ, trả về danh sách rỗng
+            if (!validCodes.Any())
+                return new List<string>();
+
+            // Lấy danh sách mã đã tồn tại trong cùng cấp
+            return await _dbSet
+                .AsNoTracking()
+                .Where(x => !x.IsDelete && x.MatHangChaId == parentId && validCodes.Contains(x.Ma))
+                .Select(x => x.Ma)
+                .ToListAsync();
+        }
+
+        // mã tồn tại trong cùng một nhóm
+        public async Task<bool> ExistsByMaInSameLevelAsync(string ma, Guid? parentId, Guid? exceptId = null)
+        {
+            // Query items at the same level (same parent) with the same code
+            var query = _dbSet
+                .AsNoTracking()
+                .Where(x => !x.IsDelete)
+                .Where(x => x.Ma == ma)
+                .Where(x => x.MatHangChaId == parentId);
+
+            // If we're updating an existing item, exclude it from the check
+            if (exceptId.HasValue)
+            {
+                query = query.Where(x => x.Id != exceptId.Value);
+            }
+
+            return await query.AnyAsync();
         }
     }
 }

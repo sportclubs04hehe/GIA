@@ -131,6 +131,20 @@ namespace Application.Mappings
                 .ForMember(dest => dest.NgayHetHieuLuc,
                     opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc));
             CreateMap<DonViTinhCreateDto, DonViTinhsDto>();
+
+            // HHThiTruongImportDto -> Dm_HangHoaThiTruong
+            CreateMap<HHThiTruongImportDto, Dm_HangHoaThiTruong>()
+                .ForMember(dest => dest.NgayHieuLuc, 
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHieuLuc))
+                .ForMember(dest => dest.NgayHetHieuLuc,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayHetHieuLuc))
+                .ForMember(dest => dest.DonViTinhId, opt => opt.Ignore())
+                .ForMember(dest => dest.DonViTinh, opt => opt.Ignore())
+                .ForMember(dest => dest.MatHangChaId, opt => opt.Ignore())
+                .ForMember(dest => dest.MatHangCha, opt => opt.Ignore())
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+                .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.IsDelete, opt => opt.MapFrom(src => false));
         }
     }
 }
