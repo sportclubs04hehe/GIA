@@ -25,7 +25,7 @@ namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
         public DateTime NgayHetHieuLuc { get; set; }
 
         [Required(ErrorMessage = "Loại mặt hàng không được để trống")]
-        public LoaiMatHangEnum LoaiMatHang { get; set; }
+        public Loai LoaiMatHang { get; set; }
 
         public Guid? MatHangChaId { get; set; }
 

@@ -15,7 +15,7 @@ namespace Core.Entities.Domain.DanhMuc
         public DateTime NgayHetHieuLuc { get; set; }
 
         // Phân loại: 0 = Nhóm, 1 = Hàng hóa
-        public LoaiMatHangEnum LoaiMatHang { get; set; }
+        public Loai LoaiMatHang { get; set; }
 
         // Quan hệ phân cấp
         public Guid? MatHangChaId { get; set; }

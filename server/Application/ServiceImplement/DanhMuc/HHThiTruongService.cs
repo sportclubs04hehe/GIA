@@ -28,12 +28,12 @@ namespace Application.ServiceImplement.DanhMuc
             
             var entity = _mapper.Map<Dm_HangHoaThiTruong>(createDto);
 
-            if (entity.LoaiMatHang == LoaiMatHangEnum.Nhom)
+            if (entity.LoaiMatHang == Loai.Cha)
             {
                 entity.DonViTinhId = null;
                 entity.DacTinh = null;
             }
-            else if (entity.LoaiMatHang == LoaiMatHangEnum.HangHoa && !entity.DonViTinhId.HasValue)
+            else if (entity.LoaiMatHang == Loai.Con && !entity.DonViTinhId.HasValue)
             {
                 throw new ArgumentException("Mặt hàng thuộc loại hàng hóa phải có đơn vị tính");
             }
@@ -51,12 +51,12 @@ namespace Application.ServiceImplement.DanhMuc
             await ValidateUpdateDtoAsync(updateDto);
             
             var entity = _mapper.Map<Dm_HangHoaThiTruong>(updateDto);
-            if (entity.LoaiMatHang == LoaiMatHangEnum.Nhom)
+            if (entity.LoaiMatHang == Loai.Cha)
             {
                 entity.DonViTinhId = null;
                 entity.DacTinh = null;
             }
-            else if (entity.LoaiMatHang == LoaiMatHangEnum.HangHoa && !entity.DonViTinhId.HasValue)
+            else if (entity.LoaiMatHang == Loai.Con && !entity.DonViTinhId.HasValue)
             {
                 throw new ArgumentException("Mặt hàng thuộc loại hàng hóa phải có đơn vị tính");
             }
@@ -209,12 +209,12 @@ namespace Application.ServiceImplement.DanhMuc
                 var entity = _mapper.Map<Dm_HangHoaThiTruong>(dto);
                 
                 // Xử lý theo loại mặt hàng từ input
-                if (dto.LoaiMatHang == LoaiMatHangEnum.Nhom)
+                if (dto.LoaiMatHang == Loai.Cha)
                 {
                     entity.DonViTinhId = null;
                     entity.DacTinh = null;
                 }
-                else if (dto.LoaiMatHang == LoaiMatHangEnum.HangHoa && !dto.DonViTinhId.HasValue)
+                else if (dto.LoaiMatHang == Loai.Con && !dto.DonViTinhId.HasValue)
                 {
                     throw new ArgumentException($"Mặt hàng '{dto.Ten}' có loại là hàng hóa nhưng không có đơn vị tính");
                 }
@@ -340,7 +340,7 @@ namespace Application.ServiceImplement.DanhMuc
             
             // Lấy tất cả tên đơn vị tính từ danh sách import để kiểm tra/tạo một lần
             var donViTinhNames = importDto.Items
-                .Where(x => x.LoaiMatHang == LoaiMatHangEnum.HangHoa && !string.IsNullOrWhiteSpace(x.DonViTinhTen))
+                .Where(x => x.LoaiMatHang == Loai.Con && !string.IsNullOrWhiteSpace(x.DonViTinhTen))
                 .Select(x => x.DonViTinhTen.Trim())
                 .Distinct()
                 .ToList();
@@ -426,7 +426,7 @@ namespace Application.ServiceImplement.DanhMuc
                     }
                     
                     // Validate loại mặt hàng và đơn vị tính
-                    if (importItem.LoaiMatHang == LoaiMatHangEnum.HangHoa)
+                    if (importItem.LoaiMatHang == Loai.Con)
                     {
                         // Nếu là hàng hóa, phải có đơn vị tính
                         if (string.IsNullOrWhiteSpace(importItem.DonViTinhTen))
@@ -449,13 +449,13 @@ namespace Application.ServiceImplement.DanhMuc
                     entity.MatHangChaId = importDto.MatHangChaId;
                     
                     // Xử lý theo loại mặt hàng
-                    if (entity.LoaiMatHang == LoaiMatHangEnum.Nhom)
+                    if (entity.LoaiMatHang == Loai.Cha)
                     {
                         // Nếu là nhóm, đảm bảo không có đơn vị tính và đặc tính
                         entity.DonViTinhId = null;
                         entity.DacTinh = null;
                     }
-                    else if (entity.LoaiMatHang == LoaiMatHangEnum.HangHoa)
+                    else if (entity.LoaiMatHang == Loai.Con)
                     {
                         // Nếu là hàng hóa, gán đơn vị tính
                         entity.DonViTinhId = donViTinhMapping[importItem.DonViTinhTen.Trim()];

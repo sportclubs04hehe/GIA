@@ -18,7 +18,7 @@ namespace Core.Entities.Domain.DanhMuc
         public string? CanChinhCot { get; set; }
         public DateTime NgayHieuLuc { get; set; }
         public DateTime NgayHetHieuLuc { get; set; }
-        public LoaiThuocTinhEnum LoaiThuocTinh { get; set; }
+        public Loai Loai { get; set; }
 
         // Quan hệ phân cấp
         public Guid? ThuocTinhChaId { get; set; }

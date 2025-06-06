@@ -18,7 +18,7 @@ namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
 
         // Phân loại: 0 = Nhóm, 1 = Hàng hóa
         [Required(ErrorMessage = "Loại mặt hàng là bắt buộc")]
-        public LoaiMatHangEnum LoaiMatHang { get; set; }
+        public Loai LoaiMatHang { get; set; }
 
         // Thuộc tính đặc trưng cho hàng hóa
         [StringLength(500)]

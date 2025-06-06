@@ -14,7 +14,7 @@ namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
         public string? GhiChu { get; set; }
         public DateTime NgayHieuLuc { get; set; }
         public DateTime NgayHetHieuLuc { get; set; }
-        public LoaiMatHangEnum LoaiMatHang { get; set; }
+        public Loai LoaiMatHang { get; set; }
         
         // Thêm thuộc tính này
         public Guid? MatHangChaId { get; set; }

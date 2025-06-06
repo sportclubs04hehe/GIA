@@ -28,7 +28,7 @@ namespace Infrastructure.Data.DanhMuc.Repository
         public async Task<List<Dm_HangHoaThiTruong>> GetAllParentCategoriesAsync()
         {
             return await _dbSet
-                .Where(x => !x.IsDelete && x.LoaiMatHang == LoaiMatHangEnum.Nhom && x.MatHangChaId == null)
+                .Where(x => !x.IsDelete && x.LoaiMatHang == Loai.Cha && x.MatHangChaId == null)
                 .OrderBy(x => x.Ten)
                 .AsNoTracking()
                 .ToListAsync();
@@ -302,7 +302,7 @@ namespace Infrastructure.Data.DanhMuc.Repository
         {
             // Sử dụng cách tiếp cận hiệu quả hơn, tránh các truy vấn N+1
             var categories = await _dbSet
-                .Where(x => !x.IsDelete && x.LoaiMatHang == LoaiMatHangEnum.Nhom)
+                .Where(x => !x.IsDelete && x.LoaiMatHang == Loai.Cha)
                 .Include(x => x.MatHangCha)
                 .OrderBy(x => x.Ten)
                 .AsNoTracking()

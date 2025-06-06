@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Core.Entities.Domain.DanhMuc.Enum
 {
-    public enum LoaiThuocTinhEnum
+    public enum Loai
     {
-        NhomThuocTinh = 0,
-        ThuocTinh = 1
+        Cha = 0, // Nhom
+        Con = 1 // HangHoa
     }
 }
