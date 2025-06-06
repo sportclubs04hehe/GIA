@@ -29,5 +29,10 @@ namespace Core.Entities.Domain.DanhMuc
         public virtual Dm_HangHoaThiTruong? MatHangCha { get; set; }
         public virtual ICollection<Dm_HangHoaThiTruong> MatHangCon { get; set; } = new List<Dm_HangHoaThiTruong>();
         public virtual Dm_DonViTinh? DonViTinh { get; set; }
+
+        // Thêm navigation property đến Dm_ThuocTinh
+        public Guid? ThuocTinhId { get; set; }
+        [ForeignKey("ThuocTinhId")]
+        public virtual Dm_ThuocTinh? ThuocTinh { get; set; }
     }
 }

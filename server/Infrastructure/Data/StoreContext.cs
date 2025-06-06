@@ -14,6 +14,7 @@ namespace Infrastructure.Data
         public DbSet<Dm_HangHoa> HangHoas { get; set; }
         public DbSet<Dm_DonViTinh> DonViTinhs { get; set; }
         public DbSet<Dm_HangHoaThiTruong> MatHangs { get; set; }
+        public DbSet<Dm_ThuocTinh> ThuocTinhs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

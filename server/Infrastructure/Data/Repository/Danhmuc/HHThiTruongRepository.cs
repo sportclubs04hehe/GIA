@@ -3,18 +3,20 @@ using Core.Entities.Domain.DanhMuc.Enum;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
 using Infrastructure.Data.Generic;
+using Infrastructure.Data.Utilities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace Infrastructure.Data.Repository
+namespace Infrastructure.Data.DanhMuc.Repository
 {
     public class HHThiTruongRepository : GenericRepository<Dm_HangHoaThiTruong>, IHHThiTruongRepository
     {
+        private readonly ExpressionBuilder<Dm_HangHoaThiTruong> _expressionBuilder = new ExpressionBuilder<Dm_HangHoaThiTruong>();
         public HHThiTruongRepository(StoreContext context) : base(context)
         {
         }
 
-        // Override to include related entities
+        // Ghi đè để bao gồm các thực thể liên quan
         protected override IQueryable<Dm_HangHoaThiTruong> IncludeRelations(IQueryable<Dm_HangHoaThiTruong> query)
         {
             return query
@@ -22,7 +24,7 @@ namespace Infrastructure.Data.Repository
                 .Include(x => x.DonViTinh);
         }
 
-        // Get all parent categories (only groups with no parent)
+        // Lấy tất cả các danh mục cha (chỉ các nhóm không có cha)
         public async Task<List<Dm_HangHoaThiTruong>> GetAllParentCategoriesAsync()
         {
             return await _dbSet
@@ -31,8 +33,7 @@ namespace Infrastructure.Data.Repository
                 .AsNoTracking()
                 .ToListAsync();
         }
-
-        // Get a specific category/product with its direct children
+        // Nhận một danh mục/sản phẩm cụ thể với các sản phẩm con trực tiếp của nó
         public async Task<Dm_HangHoaThiTruong?> GetWithChildrenAsync(Guid id)
         {
             return await _dbSet
@@ -87,7 +88,7 @@ namespace Infrastructure.Data.Repository
             return true;
         }
 
-        // Delete an item and all its children recursively
+        // Xóa một mục và tất cả các mục con của nó theo cách đệ quy
         public async Task<bool> DeleteWithChildrenAsync(Guid id)
         {
             using var transaction = await BeginTransactionAsync();
@@ -222,7 +223,7 @@ namespace Infrastructure.Data.Repository
 
                     combinedExpression = combinedExpression == null
                         ? expression
-                        : CombineOr(combinedExpression, expression);
+                        : _expressionBuilder.CombineOr(combinedExpression, expression);
                 }
 
                 if (combinedExpression != null)
@@ -302,13 +303,11 @@ namespace Infrastructure.Data.Repository
             // Sử dụng cách tiếp cận hiệu quả hơn, tránh các truy vấn N+1
             var categories = await _dbSet
                 .Where(x => !x.IsDelete && x.LoaiMatHang == LoaiMatHangEnum.Nhom)
-                .Include(x => x.MatHangCha) // Vẫn giữ lại Join với mặt hàng cha để lấy tên
-                // Bỏ .Include(x => x.DonViTinh) vì mặt hàng nhóm không có đơn vị tính
+                .Include(x => x.MatHangCha)
                 .OrderBy(x => x.Ten)
                 .AsNoTracking()
                 .ToListAsync();
             
-            // Lấy tất cả ID của các nhóm có con trong một truy vấn duy nhất
             var categoryIdsWithChildren = await _dbSet
                 .Where(x => !x.IsDelete && x.MatHangChaId.HasValue)
                 .Select(x => x.MatHangChaId.Value)
@@ -505,14 +504,11 @@ namespace Infrastructure.Data.Repository
             if (codes == null || !codes.Any())
                 return new List<string>();
 
-            // Lọc và chuẩn hóa danh sách các mã không rỗng
             var validCodes = codes.Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().ToList();
 
-            // Nếu không có mã hợp lệ, trả về danh sách rỗng
             if (!validCodes.Any())
                 return new List<string>();
 
-            // Lấy danh sách mã đã tồn tại trong cùng cấp
             return await _dbSet
                 .AsNoTracking()
                 .Where(x => !x.IsDelete && x.MatHangChaId == parentId && validCodes.Contains(x.Ma))
@@ -523,14 +519,12 @@ namespace Infrastructure.Data.Repository
         // mã tồn tại trong cùng một nhóm
         public async Task<bool> ExistsByMaInSameLevelAsync(string ma, Guid? parentId, Guid? exceptId = null)
         {
-            // Query items at the same level (same parent) with the same code
             var query = _dbSet
                 .AsNoTracking()
                 .Where(x => !x.IsDelete)
                 .Where(x => x.Ma == ma)
                 .Where(x => x.MatHangChaId == parentId);
 
-            // If we're updating an existing item, exclude it from the check
             if (exceptId.HasValue)
             {
                 query = query.Where(x => x.Id != exceptId.Value);

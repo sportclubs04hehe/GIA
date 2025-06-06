@@ -5,7 +5,7 @@ using Core.Entities.Domain.DanhMuc;
 using Core.Entities.Domain.DanhMuc.Enum;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
-using Infrastructure.Data.Repository;
+using Infrastructure.Data.DanhMuc.Repository;
 
 namespace Application.ServiceImplement.DanhMuc
 {
@@ -24,19 +24,15 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<HHThiTruongDto> CreateAsync(CreateHHThiTruongDto createDto)
         {
-            // Validate the DTO first
             await ValidateCreateDtoAsync(createDto);
             
             var entity = _mapper.Map<Dm_HangHoaThiTruong>(createDto);
 
-            // Ưu tiên sử dụng LoaiMatHang từ client
-            // Nếu là nhóm (LoaiMatHang = 0), xóa thông tin hàng hóa
             if (entity.LoaiMatHang == LoaiMatHangEnum.Nhom)
             {
                 entity.DonViTinhId = null;
                 entity.DacTinh = null;
             }
-            // Nếu là hàng hóa (LoaiMatHang = 1), đảm bảo có đơn vị tính
             else if (entity.LoaiMatHang == LoaiMatHangEnum.HangHoa && !entity.DonViTinhId.HasValue)
             {
                 throw new ArgumentException("Mặt hàng thuộc loại hàng hóa phải có đơn vị tính");
@@ -52,21 +48,14 @@ namespace Application.ServiceImplement.DanhMuc
             if (existingEntity == null)
                 throw new KeyNotFoundException($"Mặt hàng có ID {updateDto.Id} không tồn tại");
 
-            // Validate the DTO first
             await ValidateUpdateDtoAsync(updateDto);
             
             var entity = _mapper.Map<Dm_HangHoaThiTruong>(updateDto);
-
-            // Ưu tiên sử dụng LoaiMatHang từ client
-            // Không tự đổi LoaiMatHang dựa vào DonViTinhId
-
-            // Nếu là nhóm (LoaiMatHang = 0), xóa thông tin hàng hóa
             if (entity.LoaiMatHang == LoaiMatHangEnum.Nhom)
             {
                 entity.DonViTinhId = null;
                 entity.DacTinh = null;
             }
-            // Nếu là hàng hóa (LoaiMatHang = 1), đảm bảo có đơn vị tính
             else if (entity.LoaiMatHang == LoaiMatHangEnum.HangHoa && !entity.DonViTinhId.HasValue)
             {
                 throw new ArgumentException("Mặt hàng thuộc loại hàng hóa phải có đơn vị tính");
@@ -74,7 +63,6 @@ namespace Application.ServiceImplement.DanhMuc
 
             await _repository.UpdateAsync(entity);
 
-            // Get updated entity with relationships
             var updatedEntity = await _repository.GetByIdWithRelationsAsync(entity.Id);
             return _mapper.Map<HHThiTruongDto>(updatedEntity);
         }
@@ -95,7 +83,6 @@ namespace Application.ServiceImplement.DanhMuc
                 bool success = true;
                 foreach (var id in ids)
                 {
-                    // Sử dụng transaction bên ngoài
                     var result = await ((HHThiTruongRepository)_repository).DeleteWithChildrenAsync(id, useExternalTransaction: true);
                     if (!result)
                     {
@@ -145,7 +132,6 @@ namespace Application.ServiceImplement.DanhMuc
             return categoriesWithChildInfo.Select(tuple => {
                 var dto = _mapper.Map<CategoryInfoDto>(tuple.Category);
                 dto.HasChildren = tuple.HasChildren;
-                // Đảm bảo các trường liên quan đến đơn vị tính luôn là null
                 dto.TenDonViTinh = null;
                 dto.DonViTinhId = null;
                 return dto;
@@ -159,13 +145,11 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<bool> ValidateCreateDtoAsync(CreateHHThiTruongDto createDto)
         {
-            // Check for duplicate code in the same level
             if (!await IsValidCodeAsync(createDto.Ma, createDto.MatHangChaId))
             {
                 throw new ArgumentException($"Mã '{createDto.Ma}' đã tồn tại trong cùng nhóm hàng hóa. Vui lòng chọn mã khác.");
             }
             
-            // Date validation - this could be handled by attributes but adding here for completeness
             if (createDto.NgayHieuLuc > createDto.NgayHetHieuLuc)
             {
                 throw new ArgumentException("Ngày hiệu lực không được lớn hơn ngày hết hiệu lực.");
@@ -176,13 +160,11 @@ namespace Application.ServiceImplement.DanhMuc
 
         public async Task<bool> ValidateUpdateDtoAsync(UpdateHHThiTruongDto updateDto)
         {
-            // Check for duplicate code in the same level (excluding the current item)
             if (!await IsValidCodeAsync(updateDto.Ma, updateDto.MatHangChaId, updateDto.Id))
             {
                 throw new ArgumentException($"Mã '{updateDto.Ma}' đã tồn tại trong cùng nhóm hàng hóa. Vui lòng chọn mã khác.");
             }
 
-            // Date validation - this could be handled by attributes but adding here for completeness
             if (updateDto.NgayHieuLuc > updateDto.NgayHetHieuLuc)
             {
                 throw new ArgumentException("Ngày hiệu lực không được lớn hơn ngày hết hiệu lực.");

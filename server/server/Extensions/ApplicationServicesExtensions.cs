@@ -5,7 +5,7 @@ using Application.ServiceInterface.IDanhMuc;
 using Core.Interfaces.IRepository.IDanhMuc;
 using Core.ServiceInterface.ISSO;
 using Infrastructure.Data;
-using Infrastructure.Data.Repository;
+using Infrastructure.Data.DanhMuc.Repository;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using server.Errors;

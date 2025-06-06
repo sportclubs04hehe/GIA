@@ -4,7 +4,7 @@ using Infrastructure.Data.Generic;
 using Microsoft.EntityFrameworkCore;
 using Core.Helpers;
 
-namespace Infrastructure.Data.Repository
+namespace Infrastructure.Data.DanhMuc.Repository
 {
     public class NhomHangHoaRepository : GenericRepository<Dm_NhomHangHoa>, INhomHangHoaRepository
     {

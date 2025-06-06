@@ -4,7 +4,7 @@ using Core.Interfaces.IRepository.IDanhMuc;
 using Infrastructure.Data.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Data.Repository
+namespace Infrastructure.Data.DanhMuc.Repository
 {
     public class DonViTinhRepository : GenericRepository<Dm_DonViTinh>, IDonViTinhRepository
     {
