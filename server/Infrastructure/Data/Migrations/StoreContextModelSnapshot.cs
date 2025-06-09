@@ -270,6 +270,9 @@ namespace Infrastructure.Data.Migrations
                     b.Property<bool>("IsDelete")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("Loai")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Ma")
                         .IsRequired()
                         .HasColumnType("text");

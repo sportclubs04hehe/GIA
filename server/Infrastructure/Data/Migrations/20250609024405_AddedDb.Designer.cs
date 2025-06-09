@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(StoreContext))]
-    [Migration("20250517033317_added_db")]
-    partial class added_db
+    [Migration("20250609024405_AddedDb")]
+    partial class AddedDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -177,6 +177,9 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("ThuocTinhId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DonViTinhId");
@@ -186,6 +189,8 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("LoaiMatHang");
 
                     b.HasIndex("MatHangChaId");
+
+                    b.HasIndex("ThuocTinhId");
 
                     b.HasIndex("Ma", "MatHangChaId")
                         .IsUnique();
@@ -241,6 +246,73 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("NhomHangHoa");
                 });
 
+            modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_ThuocTinh", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CanChinhCot")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CongThuc")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DinhDang")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GhiChu")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDelete")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Loai")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Ma")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NgayHetHieuLuc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NgayHieuLuc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Stt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Ten")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ThuocTinhChaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Width")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ThuocTinhChaId");
+
+                    b.ToTable("Dm_ThuocTinh");
+                });
+
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_HangHoa", b =>
                 {
                     b.HasOne("Core.Entities.Domain.DanhMuc.Dm_DonViTinh", "DonViTinh")
@@ -270,9 +342,15 @@ namespace Infrastructure.Data.Migrations
                         .HasForeignKey("MatHangChaId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Core.Entities.Domain.DanhMuc.Dm_ThuocTinh", "ThuocTinh")
+                        .WithMany("HangHoaThiTruongs")
+                        .HasForeignKey("ThuocTinhId");
+
                     b.Navigation("DonViTinh");
 
                     b.Navigation("MatHangCha");
+
+                    b.Navigation("ThuocTinh");
                 });
 
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_NhomHangHoa", b =>
@@ -283,6 +361,15 @@ namespace Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("NhomCha");
+                });
+
+            modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_ThuocTinh", b =>
+                {
+                    b.HasOne("Core.Entities.Domain.DanhMuc.Dm_ThuocTinh", "ThuocTinhCha")
+                        .WithMany("ThuocTinhCon")
+                        .HasForeignKey("ThuocTinhChaId");
+
+                    b.Navigation("ThuocTinhCha");
                 });
 
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_DonViTinh", b =>
@@ -302,6 +389,13 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("HangHoas");
 
                     b.Navigation("NhomCon");
+                });
+
+            modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_ThuocTinh", b =>
+                {
+                    b.Navigation("HangHoaThiTruongs");
+
+                    b.Navigation("ThuocTinhCon");
                 });
 #pragma warning restore 612, 618
         }

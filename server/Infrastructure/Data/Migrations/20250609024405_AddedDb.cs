@@ -6,11 +6,44 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class added_db : Migration
+    public partial class AddedDb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Dm_ThuocTinh",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Stt = table.Column<string>(type: "text", nullable: false),
+                    Ma = table.Column<string>(type: "text", nullable: false),
+                    Ten = table.Column<string>(type: "text", nullable: false),
+                    GhiChu = table.Column<string>(type: "text", nullable: true),
+                    DinhDang = table.Column<string>(type: "text", nullable: true),
+                    Width = table.Column<string>(type: "text", nullable: true),
+                    CongThuc = table.Column<string>(type: "text", nullable: true),
+                    CanChinhCot = table.Column<string>(type: "text", nullable: true),
+                    NgayHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    NgayHetHieuLuc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Loai = table.Column<int>(type: "integer", nullable: false),
+                    ThuocTinhChaId = table.Column<Guid>(type: "uuid", nullable: true),
+                    IsDelete = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "text", nullable: true),
+                    ModifiedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Dm_ThuocTinh", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Dm_ThuocTinh_Dm_ThuocTinh_ThuocTinhChaId",
+                        column: x => x.ThuocTinhChaId,
+                        principalTable: "Dm_ThuocTinh",
+                        principalColumn: "Id");
+                });
+
             migrationBuilder.CreateTable(
                 name: "DonViTinh",
                 columns: table => new
@@ -74,6 +107,7 @@ namespace Infrastructure.Data.Migrations
                     MatHangChaId = table.Column<Guid>(type: "uuid", nullable: true),
                     DacTinh = table.Column<string>(type: "text", nullable: true),
                     DonViTinhId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ThuocTinhId = table.Column<Guid>(type: "uuid", nullable: true),
                     IsDelete = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -83,6 +117,11 @@ namespace Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MatHang", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MatHang_Dm_ThuocTinh_ThuocTinhId",
+                        column: x => x.ThuocTinhId,
+                        principalTable: "Dm_ThuocTinh",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MatHang_DonViTinh_DonViTinhId",
                         column: x => x.DonViTinhId,
@@ -135,6 +174,11 @@ namespace Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Dm_ThuocTinh_ThuocTinhChaId",
+                table: "Dm_ThuocTinh",
+                column: "ThuocTinhChaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_HangHoa_DonViTinhId",
                 table: "HangHoa",
                 column: "DonViTinhId");
@@ -171,6 +215,11 @@ namespace Infrastructure.Data.Migrations
                 column: "MatHangChaId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MatHang_ThuocTinhId",
+                table: "MatHang",
+                column: "ThuocTinhId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_NhomHangHoa_NhomChaId",
                 table: "NhomHangHoa",
                 column: "NhomChaId");
@@ -187,6 +236,9 @@ namespace Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "NhomHangHoa");
+
+            migrationBuilder.DropTable(
+                name: "Dm_ThuocTinh");
 
             migrationBuilder.DropTable(
                 name: "DonViTinh");

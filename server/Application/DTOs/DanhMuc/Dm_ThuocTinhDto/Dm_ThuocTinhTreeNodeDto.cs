@@ -1,4 +1,8 @@
-﻿namespace Application.DTOs.DanhMuc.Dm_ThuocTinhDto
+﻿using Core.Entities.Domain.DanhMuc.Enum;
+using System;
+using System.Collections.Generic;
+
+namespace Application.DTOs.DanhMuc.Dm_ThuocTinhDto
 {
     public class Dm_ThuocTinhTreeNodeDto
     {
@@ -6,6 +10,7 @@
         public string Stt { get; set; }
         public string Ma { get; set; }
         public string Ten { get; set; }
+        public Loai Loai { get; set; }
         public string GhiChu { get; set; }
         public string DinhDang { get; set; }
         public string Width { get; set; }

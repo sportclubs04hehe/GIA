@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Application.DTOs;
+using Core.Entities.Domain.DanhMuc.Enum;
+using System;
 
 namespace Application.DTOs.DanhMuc.Dm_ThuocTinhDto
 {
@@ -18,6 +16,7 @@ namespace Application.DTOs.DanhMuc.Dm_ThuocTinhDto
         public string CanChinhCot { get; set; }
         public DateTime NgayHieuLuc { get; set; }
         public DateTime NgayHetHieuLuc { get; set; }
+        public Loai Loai { get; set; }
         public Guid? ThuocTinhChaId { get; set; }
         public string TenThuocTinhCha { get; set; }
         public string MaThuocTinhCha { get; set; }

@@ -108,17 +108,6 @@ namespace Application.ServiceImplement.DanhMuc
             }
         }
 
-        public async Task<PagedList<HHThiTruongDto>> GetAllAsync(PaginationParams paginationParams)
-        {
-            var entities = await _repository.GetAllAsync(paginationParams);
-            return new PagedList<HHThiTruongDto>(
-                _mapper.Map<List<HHThiTruongDto>>(entities.ToList()),
-                entities.TotalCount,
-                entities.CurrentPage,
-                entities.PageSize
-            );
-        }
-
         public async Task<List<HHThiTruongDto>> GetAllParentCategoriesAsync()
         {
             var entities = await _repository.GetAllParentCategoriesAsync();

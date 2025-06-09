@@ -6,6 +6,7 @@ using Core.Interfaces.IRepository.IDanhMuc;
 using Core.ServiceInterface.ISSO;
 using Infrastructure.Data;
 using Infrastructure.Data.DanhMuc.Repository;
+using Infrastructure.Data.Repository.Danhmuc;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using server.Errors;
@@ -33,6 +34,7 @@ namespace server.Extensions
             services.AddScoped<INhomHangHoaService, NhomHangHoaService>();
             services.AddScoped<IDonViTinhService, DonViTinhService>();
             services.AddScoped<IHHThiTruongService, HHThiTruongService>();
+            services.AddScoped<IDm_ThuocTinhService, Dm_ThuocTinhService>();
 
             #endregion
 
@@ -48,6 +50,7 @@ namespace server.Extensions
             services.AddScoped<INhomHangHoaRepository, NhomHangHoaRepository>();
             services.AddScoped<IDonViTinhRepository, DonViTinhRepository>();
             services.AddScoped<IHHThiTruongRepository, HHThiTruongRepository>();
+            services.AddScoped<IDm_ThuocTinhRepository, Dm_ThuocTinhRepository>();
 
             #endregion
 
