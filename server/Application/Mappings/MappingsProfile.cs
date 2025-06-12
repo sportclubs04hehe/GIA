@@ -1,9 +1,12 @@
 ﻿using Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto;
+using Application.DTOs.DanhMuc.Dm_LoaiGia;
 using Application.DTOs.DanhMuc.Dm_ThuocTinhDto;
 using Application.DTOs.DanhMuc.DonViTinhDto;
+using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
 using Application.Resolver;
 using AutoMapper;
 using Core.Entities.Domain.DanhMuc;
+using Core.Entities.Domain.NghiepVu;
 
 namespace Application.Mappings
 {
@@ -101,6 +104,33 @@ namespace Application.Mappings
                 .ForMember(d => d.MaThuocTinhCha, o => o.MapFrom(s => s.ThuocTinhCha != null ? s.ThuocTinhCha.Ma : null))
                 .ForMember(d => d.HasChildren, o => o.MapFrom(s => s.ThuocTinhCon.Any(c => !c.IsDelete)));
 
+            #endregion
+
+            #region DM Loại Giá
+            // Map entity to DTO
+            CreateMap<Dm_LoaiGia, LoaiGiaDto>();
+
+            // Map create DTO to entity
+            CreateMap<LoaiGiaCreateDto, Dm_LoaiGia>();
+
+            // Map update DTO to entity
+            CreateMap<LoaiGiaUpdateDto, Dm_LoaiGia>();
+            #endregion
+
+            #region Thu Thập Giá Thị Trường
+            // Map entity to DTO
+            CreateMap<ThuThapGiaThiTruong, ThuThapGiaThiTruongDto>()
+                .ForMember(d => d.MaHangHoa, o => o.MapFrom(s => s.HangHoa != null ? s.HangHoa.Ma : null))
+                .ForMember(d => d.TenHangHoa, o => o.MapFrom(s => s.HangHoa != null ? s.HangHoa.Ten : null))
+                .ForMember(d => d.TenLoaiGia, o => o.MapFrom(s => s.LoaiGia != null ? s.LoaiGia.Ten : null));
+
+            // Map create DTO to entity
+            CreateMap<ThuThapGiaThiTruongCreateDto, ThuThapGiaThiTruong>()
+                .ForMember(dest => dest.NgayThuThap,
+                    opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayThuThap));
+
+            // Map update DTO to entity
+            CreateMap<ThuThapGiaThiTruongUpdateDto, ThuThapGiaThiTruong>();
             #endregion
         }
     }

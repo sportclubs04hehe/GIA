@@ -10,7 +10,6 @@ namespace Infrastructure.Data
         {
         }
 
-        // Trong quá trình chuyển đổi, vẫn giữ lại DbSet cũ
         public DbSet<Dm_NhomHangHoa> NhomHangHoas { get; set; }
         public DbSet<Dm_HangHoa> HangHoas { get; set; }
         public DbSet<Dm_DonViTinh> DonViTinhs { get; set; }
@@ -57,19 +56,18 @@ namespace Infrastructure.Data
                 .HasForeignKey(m => m.DonViTinhId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Cấu hình cho ThuThapGiaThiTruong
             modelBuilder.Entity<ThuThapGiaThiTruong>()
                 .HasOne(t => t.HangHoa)
-                .WithMany()
+                .WithMany(h => h.ThuThapGiaThiTruongs)
                 .HasForeignKey(t => t.HangHoaId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<ThuThapGiaThiTruong>()
                 .HasOne(t => t.LoaiGia)
-                .WithMany()
+                .WithMany(l => l.ThuThapGiaThiTruongs)
                 .HasForeignKey(t => t.LoaiGiaId)
                 .OnDelete(DeleteBehavior.Restrict);
-
+    
             // Cấu hình cho Dm_LoaiGia
             modelBuilder.Entity<Dm_LoaiGia>()
                 .HasIndex(l => l.Ma)

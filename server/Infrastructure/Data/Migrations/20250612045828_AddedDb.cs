@@ -66,6 +66,24 @@ namespace Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "LoaiGias",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Ma = table.Column<string>(type: "text", nullable: false),
+                    Ten = table.Column<string>(type: "text", nullable: false),
+                    IsDelete = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "text", nullable: true),
+                    ModifiedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LoaiGias", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "NhomHangHoa",
                 columns: table => new
                 {
@@ -173,6 +191,38 @@ namespace Infrastructure.Data.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "ThuThapGiaThiTruongs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    NgayThuThap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    HangHoaId = table.Column<Guid>(type: "uuid", nullable: false),
+                    LoaiGiaId = table.Column<Guid>(type: "uuid", nullable: false),
+                    LoaiNghiepVu = table.Column<int>(type: "integer", nullable: false),
+                    IsDelete = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ModifiedBy = table.Column<string>(type: "text", nullable: true),
+                    ModifiedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ThuThapGiaThiTruongs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ThuThapGiaThiTruongs_LoaiGias_LoaiGiaId",
+                        column: x => x.LoaiGiaId,
+                        principalTable: "LoaiGias",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ThuThapGiaThiTruongs_MatHang_HangHoaId",
+                        column: x => x.HangHoaId,
+                        principalTable: "MatHang",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Dm_ThuocTinh_ThuocTinhChaId",
                 table: "Dm_ThuocTinh",
@@ -187,6 +237,12 @@ namespace Infrastructure.Data.Migrations
                 name: "IX_HangHoa_NhomHangHoaId",
                 table: "HangHoa",
                 column: "NhomHangHoaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LoaiGias_Ma",
+                table: "LoaiGias",
+                column: "Ma",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatHang_DonViTinhId",
@@ -223,6 +279,37 @@ namespace Infrastructure.Data.Migrations
                 name: "IX_NhomHangHoa_NhomChaId",
                 table: "NhomHangHoa",
                 column: "NhomChaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ThuThapGiaThiTruongs_HangHoaId",
+                table: "ThuThapGiaThiTruongs",
+                column: "HangHoaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ThuThapGiaThiTruongs_IsDelete",
+                table: "ThuThapGiaThiTruongs",
+                column: "IsDelete");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ThuThapGiaThiTruongs_LoaiGiaId",
+                table: "ThuThapGiaThiTruongs",
+                column: "LoaiGiaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ThuThapGiaThiTruongs_LoaiNghiepVu",
+                table: "ThuThapGiaThiTruongs",
+                column: "LoaiNghiepVu");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ThuThapGiaThiTruongs_NgayThuThap",
+                table: "ThuThapGiaThiTruongs",
+                column: "NgayThuThap");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ThuThapGiaThiTruongs_NgayThuThap_HangHoaId_LoaiGiaId_LoaiNg~",
+                table: "ThuThapGiaThiTruongs",
+                columns: new[] { "NgayThuThap", "HangHoaId", "LoaiGiaId", "LoaiNghiepVu" },
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -232,10 +319,16 @@ namespace Infrastructure.Data.Migrations
                 name: "HangHoa");
 
             migrationBuilder.DropTable(
-                name: "MatHang");
+                name: "ThuThapGiaThiTruongs");
 
             migrationBuilder.DropTable(
                 name: "NhomHangHoa");
+
+            migrationBuilder.DropTable(
+                name: "LoaiGias");
+
+            migrationBuilder.DropTable(
+                name: "MatHang");
 
             migrationBuilder.DropTable(
                 name: "Dm_ThuocTinh");

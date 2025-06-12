@@ -1,12 +1,16 @@
 ﻿using Application.Mappings;
 using Application.ServiceImplement.DanhMuc;
+using Application.ServiceImplement.NghiepVu;
 using Application.ServiceImplement.SSO;
 using Application.ServiceInterface.IDanhMuc;
+using Application.ServiceInterface.INghiepVu;
 using Core.Interfaces.IRepository.IDanhMuc;
+using Core.Interfaces.IRepository.INghiepVu;
 using Core.ServiceInterface.ISSO;
 using Infrastructure.Data;
 using Infrastructure.Data.DanhMuc.Repository;
 using Infrastructure.Data.Repository.Danhmuc;
+using Infrastructure.Data.Repository.NghiepVu;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using server.Errors;
@@ -35,7 +39,12 @@ namespace server.Extensions
             services.AddScoped<IDonViTinhService, DonViTinhService>();
             services.AddScoped<IHHThiTruongService, HHThiTruongService>();
             services.AddScoped<IDm_ThuocTinhService, Dm_ThuocTinhService>();
+            services.AddScoped<IDm_LoaiGiaService, Dm_LoaiGiaService>();
 
+            #endregion
+
+            #region Nghiệp vụ
+            services.AddScoped<IThuThapGiaThiTruongService, ThuThapGiaThiTruongService>();
             #endregion
 
             #endregion
@@ -46,11 +55,18 @@ namespace server.Extensions
 
             #region Repositories
 
+            #region Danh mục
             services.AddScoped<IHangHoaRepository, HangHoaRepository>();
             services.AddScoped<INhomHangHoaRepository, NhomHangHoaRepository>();
             services.AddScoped<IDonViTinhRepository, DonViTinhRepository>();
             services.AddScoped<IHHThiTruongRepository, HHThiTruongRepository>();
             services.AddScoped<IDm_ThuocTinhRepository, Dm_ThuocTinhRepository>();
+            services.AddScoped<IDm_LoaiGiaRepository, Dm_LoaiGiaRepository>();
+            #endregion
+
+            #region Nghiệp vụ
+            services.AddScoped<IThuThapGiaThiTruongRepository, ThuThapGiaThiTruongRepository>();
+            #endregion
 
             #endregion
 

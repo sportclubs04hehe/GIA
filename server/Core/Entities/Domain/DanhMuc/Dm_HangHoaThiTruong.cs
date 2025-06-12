@@ -1,4 +1,5 @@
 ﻿using Core.Entities.Domain.DanhMuc.Enum;
+using Core.Entities.Domain.NghiepVu;
 using Core.Entities.IdentityBase;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -34,5 +35,8 @@ namespace Core.Entities.Domain.DanhMuc
         public Guid? ThuocTinhId { get; set; }
         [ForeignKey("ThuocTinhId")]
         public virtual Dm_ThuocTinh? ThuocTinh { get; set; }
+
+        // Thêm navigation property để tham chiếu ngược lại
+        public virtual ICollection<ThuThapGiaThiTruong> ThuThapGiaThiTruongs { get; set; } = new List<ThuThapGiaThiTruong>();
     }
 }

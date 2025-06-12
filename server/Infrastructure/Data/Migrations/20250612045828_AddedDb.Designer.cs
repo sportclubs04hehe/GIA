@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(StoreContext))]
-    [Migration("20250609024405_AddedDb")]
+    [Migration("20250612045828_AddedDb")]
     partial class AddedDb
     {
         /// <inheritdoc />
@@ -198,6 +198,43 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("MatHang");
                 });
 
+            modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_LoaiGia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDelete")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Ma")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Ten")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Ma")
+                        .IsUnique();
+
+                    b.ToTable("LoaiGias");
+                });
+
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_NhomHangHoa", b =>
                 {
                     b.Property<Guid>("Id")
@@ -313,6 +350,57 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Dm_ThuocTinh");
                 });
 
+            modelBuilder.Entity("Core.Entities.Domain.NghiepVu.ThuThapGiaThiTruong", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("HangHoaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDelete")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("LoaiGiaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("LoaiNghiepVu")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NgayThuThap")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HangHoaId");
+
+                    b.HasIndex("IsDelete");
+
+                    b.HasIndex("LoaiGiaId");
+
+                    b.HasIndex("LoaiNghiepVu");
+
+                    b.HasIndex("NgayThuThap");
+
+                    b.HasIndex("NgayThuThap", "HangHoaId", "LoaiGiaId", "LoaiNghiepVu")
+                        .IsUnique();
+
+                    b.ToTable("ThuThapGiaThiTruongs");
+                });
+
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_HangHoa", b =>
                 {
                     b.HasOne("Core.Entities.Domain.DanhMuc.Dm_DonViTinh", "DonViTinh")
@@ -372,6 +460,25 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("ThuocTinhCha");
                 });
 
+            modelBuilder.Entity("Core.Entities.Domain.NghiepVu.ThuThapGiaThiTruong", b =>
+                {
+                    b.HasOne("Core.Entities.Domain.DanhMuc.Dm_HangHoaThiTruong", "HangHoa")
+                        .WithMany("ThuThapGiaThiTruongs")
+                        .HasForeignKey("HangHoaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Core.Entities.Domain.DanhMuc.Dm_LoaiGia", "LoaiGia")
+                        .WithMany("ThuThapGiaThiTruongs")
+                        .HasForeignKey("LoaiGiaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("HangHoa");
+
+                    b.Navigation("LoaiGia");
+                });
+
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_DonViTinh", b =>
                 {
                     b.Navigation("HangHoas");
@@ -382,6 +489,13 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_HangHoaThiTruong", b =>
                 {
                     b.Navigation("MatHangCon");
+
+                    b.Navigation("ThuThapGiaThiTruongs");
+                });
+
+            modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_LoaiGia", b =>
+                {
+                    b.Navigation("ThuThapGiaThiTruongs");
                 });
 
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_NhomHangHoa", b =>
