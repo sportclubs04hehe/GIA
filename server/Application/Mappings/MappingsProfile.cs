@@ -1,8 +1,6 @@
 ﻿using Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto;
 using Application.DTOs.DanhMuc.Dm_ThuocTinhDto;
 using Application.DTOs.DanhMuc.DonViTinhDto;
-using Application.DTOs.DanhMuc.HangHoasDto;
-using Application.DTOs.DanhMuc.NhomHangHoasDto;
 using Application.Resolver;
 using AutoMapper;
 using Core.Entities.Domain.DanhMuc;

@@ -8,7 +8,7 @@ namespace Core.Entities.Domain.DanhMuc.Enum
 {
     public enum Loai
     {
-        Cha = 0, // Nhom
-        Con = 1 // HangHoa
+        Cha = 0, // Hàng hóa cha (nhóm hàng hóa)
+        Con = 1 // Hàng hóa con (mặt hàng cụ thể)
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Core.Entities.Domain.DanhMuc;
+using Core.Entities.Domain.NghiepVu;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data
@@ -15,6 +16,9 @@ namespace Infrastructure.Data
         public DbSet<Dm_DonViTinh> DonViTinhs { get; set; }
         public DbSet<Dm_HangHoaThiTruong> MatHangs { get; set; }
         public DbSet<Dm_ThuocTinh> ThuocTinhs { get; set; }
+        public DbSet<Dm_LoaiGia> LoaiGias { get; set; }
+        public DbSet<ThuThapGiaThiTruong> ThuThapGiaThiTruongs { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,6 +56,44 @@ namespace Infrastructure.Data
                 .WithMany(d => d.MatHangs)
                 .HasForeignKey(m => m.DonViTinhId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Cấu hình cho ThuThapGiaThiTruong
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasOne(t => t.HangHoa)
+                .WithMany()
+                .HasForeignKey(t => t.HangHoaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasOne(t => t.LoaiGia)
+                .WithMany()
+                .HasForeignKey(t => t.LoaiGiaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Cấu hình cho Dm_LoaiGia
+            modelBuilder.Entity<Dm_LoaiGia>()
+                .HasIndex(l => l.Ma)
+                .IsUnique();
+
+            // Chỉ mục cho ThuThapGiaThiTruong
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasIndex(t => new { t.NgayThuThap, t.HangHoaId, t.LoaiGiaId, t.LoaiNghiepVu })
+                .IsUnique();
+
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasIndex(t => t.NgayThuThap);
+
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasIndex(t => t.HangHoaId);
+
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasIndex(t => t.LoaiGiaId);
+
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasIndex(t => t.LoaiNghiepVu);
+
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasIndex(t => t.IsDelete);
 
             // Chỉ mục
             modelBuilder.Entity<Dm_HangHoaThiTruong>()
