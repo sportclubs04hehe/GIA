@@ -16,8 +16,5 @@ namespace Application.DTOs.NghiepVu.ThuThapGiaThiTruong
 
         [Required(ErrorMessage = "Loại giá là bắt buộc")]
         public Guid LoaiGiaId { get; set; }
-
-        [Required(ErrorMessage = "Loại nghiệp vụ là bắt buộc")]
-        public LoaiNghiepVu LoaiNghiepVu { get; set; }
     }
 }

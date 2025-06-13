@@ -69,11 +69,7 @@ namespace Application.ServiceImplement.NghiepVu
 
         public async Task<PagedList<ThuThapGiaThiTruongDto>> SearchAsync(SearchParams searchParams)
         {
-            var entities = await _repository.SearchAsync(
-                searchParams,
-                e => e.HangHoa.Ten,
-                e => e.LoaiGia.Ten
-            );
+            var entities = await _repository.SearchAsync(searchParams);
             
             var dtos = _mapper.Map<List<ThuThapGiaThiTruongDto>>(entities);
             
