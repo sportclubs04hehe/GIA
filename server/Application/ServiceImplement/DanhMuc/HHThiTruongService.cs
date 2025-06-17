@@ -25,7 +25,7 @@ namespace Application.ServiceImplement.DanhMuc
         public async Task<HHThiTruongDto> CreateAsync(CreateHHThiTruongDto createDto)
         {
             await ValidateCreateDtoAsync(createDto);
-            
+
             var entity = _mapper.Map<Dm_HangHoaThiTruong>(createDto);
 
             if (entity.LoaiMatHang == Loai.Cha)
@@ -49,7 +49,7 @@ namespace Application.ServiceImplement.DanhMuc
                 throw new KeyNotFoundException($"Mặt hàng có ID {updateDto.Id} không tồn tại");
 
             await ValidateUpdateDtoAsync(updateDto);
-            
+
             var entity = _mapper.Map<Dm_HangHoaThiTruong>(updateDto);
             if (entity.LoaiMatHang == Loai.Cha)
             {
@@ -78,34 +78,26 @@ namespace Application.ServiceImplement.DanhMuc
         public async Task<bool> DeleteMultipleAsync(List<Guid> ids)
         {
             using var transaction = await _repository.BeginTransactionAsync();
-            try
-            {
-                bool success = true;
-                foreach (var id in ids)
-                {
-                    var result = await ((HHThiTruongRepository)_repository).DeleteWithChildrenAsync(id, useExternalTransaction: true);
-                    if (!result)
-                    {
-                        success = false;
-                    }
-                }
 
-                if (success)
-                {
-                    await transaction.CommitAsync();
-                    return true;
-                }
-                else
-                {
-                    await transaction.RollbackAsync();
-                    return false;
-                }
-            }
-            catch (Exception ex)
+            bool success = true;
+            foreach (var id in ids)
             {
-                await transaction.RollbackAsync();
-                throw;
+                var result = await ((HHThiTruongRepository)_repository).DeleteWithChildrenAsync(id, useExternalTransaction: true);
+                if (!result)
+                {
+                    success = false;
+                    break;
+                }
             }
+
+            if (success)
+            {
+                await transaction.CommitAsync();
+                return true;
+            }
+
+            await transaction.RollbackAsync();
+            return false;
         }
 
         public async Task<List<HHThiTruongDto>> GetAllParentCategoriesAsync()
@@ -118,7 +110,8 @@ namespace Application.ServiceImplement.DanhMuc
         {
             var categoriesWithChildInfo = await _repository.GetAllCategoriesWithChildInfoAsync();
 
-            return categoriesWithChildInfo.Select(tuple => {
+            return categoriesWithChildInfo.Select(tuple =>
+            {
                 var dto = _mapper.Map<CategoryInfoDto>(tuple.Category);
                 dto.HasChildren = tuple.HasChildren;
                 dto.TenDonViTinh = null;
@@ -138,12 +131,12 @@ namespace Application.ServiceImplement.DanhMuc
             {
                 throw new ArgumentException($"Mã '{createDto.Ma}' đã tồn tại trong cùng nhóm hàng hóa. Vui lòng chọn mã khác.");
             }
-            
+
             if (createDto.NgayHieuLuc > createDto.NgayHetHieuLuc)
             {
                 throw new ArgumentException("Ngày hiệu lực không được lớn hơn ngày hết hiệu lực.");
             }
-            
+
             return true;
         }
 
@@ -158,7 +151,7 @@ namespace Application.ServiceImplement.DanhMuc
             {
                 throw new ArgumentException("Ngày hiệu lực không được lớn hơn ngày hết hiệu lực.");
             }
-            
+
             return true;
         }
 
@@ -170,33 +163,33 @@ namespace Application.ServiceImplement.DanhMuc
             {
                 await ValidateCreateDtoAsync(item);
             }
-            
+
             // Collect all DonViTinhIds to validate in a single query
             var donViTinhIds = createDto.Items
                 .Where(x => x.DonViTinhId.HasValue)
                 .Select(x => x.DonViTinhId!.Value)
                 .Distinct()
                 .ToList();
-            
+
             if (donViTinhIds.Any())
             {
                 // Sử dụng phương thức kế thừa từ GenericRepository
                 var existingDonViTinhIds = await _donViTinhRepository.ExistsManyAsync(donViTinhIds);
                 var missingIds = donViTinhIds.Except(existingDonViTinhIds).ToList();
-                
+
                 if (missingIds.Any())
                 {
                     throw new ArgumentException($"Một hoặc nhiều đơn vị tính không tồn tại: {string.Join(", ", missingIds)}");
                 }
             }
-            
+
             // Prepare entities
             var entities = new List<Dm_HangHoaThiTruong>();
-            
+
             foreach (var dto in createDto.Items)
             {
                 var entity = _mapper.Map<Dm_HangHoaThiTruong>(dto);
-                
+
                 // Xử lý theo loại mặt hàng từ input
                 if (dto.LoaiMatHang == Loai.Cha)
                 {
@@ -207,13 +200,13 @@ namespace Application.ServiceImplement.DanhMuc
                 {
                     throw new ArgumentException($"Mặt hàng '{dto.Ten}' có loại là hàng hóa nhưng không có đơn vị tính");
                 }
-                
+
                 entities.Add(entity);
             }
-            
+
             // Add to database with validation
             var result = await _repository.AddRangeWithValidationAsync(entities);
-            
+
             // Map back to DTOs
             return _mapper.Map<List<HHThiTruongDto>>(result);
         }
@@ -274,7 +267,7 @@ namespace Application.ServiceImplement.DanhMuc
         public async Task<PagedList<HHThiTruongTreeNodeDto>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams)
         {
             var entities = await _repository.GetChildrenByParentIdPagedAsync(parentId, paginationParams);
-            
+
             return new PagedList<HHThiTruongTreeNodeDto>(
                 _mapper.Map<List<HHThiTruongTreeNodeDto>>(entities.ToList()),
                 entities.TotalCount,
@@ -310,169 +303,122 @@ namespace Application.ServiceImplement.DanhMuc
         }
 
         public async Task<(bool IsSuccess, List<HHThiTruongDto> ImportedItems, List<string> Errors)> ImportFromExcelAsync(
-            HHThiTruongBatchImportDto importDto)
+          HHThiTruongBatchImportDto importDto)
         {
             var errors = new List<string>();
             var createdEntities = new List<Dm_HangHoaThiTruong>();
             var importedItems = new List<HHThiTruongDto>();
-            
-            // Kiểm tra tính hợp lệ của nhóm cha
-            if (importDto.MatHangChaId.HasValue)
+
+            if (importDto.MatHangChaId.HasValue &&
+                !await _repository.ExistsAsync(importDto.MatHangChaId.Value))
             {
-                var parentExists = await _repository.ExistsAsync(importDto.MatHangChaId.Value);
-                if (!parentExists)
-                {
-                    errors.Add($"Nhóm cha với ID {importDto.MatHangChaId.Value} không tồn tại");
-                    return (false, importedItems, errors);
-                }
+                errors.Add($"Nhóm cha với ID {importDto.MatHangChaId.Value} không tồn tại");
+                return (false, importedItems, errors);
             }
-            
-            // Lấy tất cả tên đơn vị tính từ danh sách import để kiểm tra/tạo một lần
+
             var donViTinhNames = importDto.Items
                 .Where(x => x.LoaiMatHang == Loai.Con && !string.IsNullOrWhiteSpace(x.DonViTinhTen))
                 .Select(x => x.DonViTinhTen.Trim())
                 .Distinct()
                 .ToList();
-                                     
-            // Dictionary để lưu trữ ánh xạ từ tên đơn vị tính đến ID
+
             var donViTinhMapping = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
-            
+
             foreach (var tenDonViTinh in donViTinhNames)
             {
-                try
+                var donViTinh = await _donViTinhRepository.GetByTenAsync(tenDonViTinh);
+                if (donViTinh != null)
                 {
-                    // Tìm hoặc tạo đơn vị tính
-                    var donViTinh = await _donViTinhRepository.GetByTenAsync(tenDonViTinh);
-                    if (donViTinh != null)
-                    {
-                        donViTinhMapping[tenDonViTinh] = donViTinh.Id;
-                    }
-                    else
-                    {
-                        // Tạo đơn vị tính mới nếu chưa tồn tại
-                        var newDonViTinh = new Dm_DonViTinh
-                        {
-                            Ma = tenDonViTinh.Replace(" ", "").ToUpper(),
-                            Ten = tenDonViTinh,
-                            NgayHieuLuc = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc),  
-                            NgayHetHieuLuc = DateTime.SpecifyKind(DateTime.Today.AddYears(50), DateTimeKind.Utc), 
-                            CreatedDate = DateTime.UtcNow, 
-                            IsDelete = false
-                        };
-                        var createdDonViTinh = await _donViTinhRepository.AddAsync(newDonViTinh);
-                        donViTinhMapping[tenDonViTinh] = createdDonViTinh.Id;
-                    }
+                    donViTinhMapping[tenDonViTinh] = donViTinh.Id;
                 }
-                catch (Exception ex)
+                else
                 {
-                    errors.Add($"Lỗi xử lý đơn vị tính '{tenDonViTinh}': {ex.Message}");
+                    var newDonViTinh = new Dm_DonViTinh
+                    {
+                        Ma = tenDonViTinh.Replace(" ", "").ToUpper(),
+                        Ten = tenDonViTinh,
+                        NgayHieuLuc = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc),
+                        NgayHetHieuLuc = DateTime.SpecifyKind(DateTime.Today.AddYears(50), DateTimeKind.Utc),
+                        CreatedDate = DateTime.UtcNow,
+                        IsDelete = false
+                    };
+                    var createdDonViTinh = await _donViTinhRepository.AddAsync(newDonViTinh);
+                    donViTinhMapping[tenDonViTinh] = createdDonViTinh.Id;
                 }
             }
-            
-            // Lưu trữ mã mặt hàng đã xử lý để kiểm tra trùng lặp trong cùng batch
+
             var processedCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            
-            // Xử lý từng mặt hàng thị trường
+
             foreach (var importItem in importDto.Items)
             {
-                try
+                if (string.IsNullOrWhiteSpace(importItem.Ma))
                 {
-                    // Validate dữ liệu cơ bản
-                    if (string.IsNullOrWhiteSpace(importItem.Ma))
-                    {
-                        errors.Add($"Mặt hàng '{importItem.Ten}': Mã không được để trống");
-                        continue;
-                    }
-                    
-                    if (string.IsNullOrWhiteSpace(importItem.Ten))
-                    {
-                        errors.Add($"Mặt hàng có mã '{importItem.Ma}': Tên không được để trống");
-                        continue;
-                    }
-                    
-                    // Kiểm tra trùng mã trong cùng batch
-                    if (processedCodes.Contains(importItem.Ma))
-                    {
-                        errors.Add($"Mã '{importItem.Ma}' bị trùng lặp trong file import");
-                        continue;
-                    }
-                    
-                    // Kiểm tra mã đã tồn tại trong cùng cấp (cùng nhóm cha) chưa
-                    if (await _repository.ExistsByMaInSameLevelAsync(importItem.Ma, importDto.MatHangChaId))
-                    {
-                        errors.Add($"Mã '{importItem.Ma}' đã tồn tại trong cùng nhóm hàng hóa");
-                        continue;
-                    }
-                    
-                    // Ghi nhận mã đã xử lý
-                    processedCodes.Add(importItem.Ma);
-                    
-                    // Xác thực ngày hiệu lực/hết hiệu lực
-                    if (importItem.NgayHieuLuc > importItem.NgayHetHieuLuc)
-                    {
-                        errors.Add($"Mặt hàng '{importItem.Ma}': Ngày hiệu lực không được lớn hơn ngày hết hiệu lực");
-                        continue;
-                    }
-                    
-                    // Validate loại mặt hàng và đơn vị tính
-                    if (importItem.LoaiMatHang == Loai.Con)
-                    {
-                        // Nếu là hàng hóa, phải có đơn vị tính
-                        if (string.IsNullOrWhiteSpace(importItem.DonViTinhTen))
-                        {
-                            errors.Add($"Mặt hàng '{importItem.Ma}': Loại là hàng hóa nhưng không có đơn vị tính");
-                            continue;
-                        }
-                        
-                        // Kiểm tra đơn vị tính đã được xử lý chưa
-                        if (!donViTinhMapping.TryGetValue(importItem.DonViTinhTen.Trim(), out var donViTinhId))
-                        {
-                            errors.Add($"Mặt hàng '{importItem.Ma}': Không thể xác định đơn vị tính '{importItem.DonViTinhTen}'");
-                            continue;
-                        }
-                    }
-                    
-                    var entity = _mapper.Map<Dm_HangHoaThiTruong>(importItem);
-                    
-                    // Gán nhóm cha
-                    entity.MatHangChaId = importDto.MatHangChaId;
-                    
-                    // Xử lý theo loại mặt hàng
-                    if (entity.LoaiMatHang == Loai.Cha)
-                    {
-                        // Nếu là nhóm, đảm bảo không có đơn vị tính và đặc tính
-                        entity.DonViTinhId = null;
-                        entity.DacTinh = null;
-                    }
-                    else if (entity.LoaiMatHang == Loai.Con)
-                    {
-                        // Nếu là hàng hóa, gán đơn vị tính
-                        entity.DonViTinhId = donViTinhMapping[importItem.DonViTinhTen.Trim()];
-                    }
-                    
-                    createdEntities.Add(entity);
+                    errors.Add($"Mặt hàng '{importItem.Ten}': Mã không được để trống");
+                    continue;
                 }
-                catch (Exception ex)
+
+                if (string.IsNullOrWhiteSpace(importItem.Ten))
                 {
-                    errors.Add($"Lỗi xử lý mặt hàng '{importItem.Ten}': {ex.Message}");
+                    errors.Add($"Mặt hàng có mã '{importItem.Ma}': Tên không được để trống");
+                    continue;
                 }
+
+                if (processedCodes.Contains(importItem.Ma))
+                {
+                    errors.Add($"Mã '{importItem.Ma}' bị trùng lặp trong file import");
+                    continue;
+                }
+
+                if (await _repository.ExistsByMaInSameLevelAsync(importItem.Ma, importDto.MatHangChaId))
+                {
+                    errors.Add($"Mã '{importItem.Ma}' đã tồn tại trong cùng nhóm hàng hóa");
+                    continue;
+                }
+
+                if (importItem.NgayHieuLuc > importItem.NgayHetHieuLuc)
+                {
+                    errors.Add($"Mặt hàng '{importItem.Ma}': Ngày hiệu lực không được lớn hơn ngày hết hiệu lực");
+                    continue;
+                }
+
+                if (importItem.LoaiMatHang == Loai.Con)
+                {
+                    if (string.IsNullOrWhiteSpace(importItem.DonViTinhTen))
+                    {
+                        errors.Add($"Mặt hàng '{importItem.Ma}': Loại là hàng hóa nhưng không có đơn vị tính");
+                        continue;
+                    }
+
+                    if (!donViTinhMapping.TryGetValue(importItem.DonViTinhTen.Trim(), out var donViTinhId))
+                    {
+                        errors.Add($"Mặt hàng '{importItem.Ma}': Không thể xác định đơn vị tính '{importItem.DonViTinhTen}'");
+                        continue;
+                    }
+                }
+
+                var entity = _mapper.Map<Dm_HangHoaThiTruong>(importItem);
+                entity.MatHangChaId = importDto.MatHangChaId;
+
+                if (entity.LoaiMatHang == Loai.Cha)
+                {
+                    entity.DonViTinhId = null;
+                    entity.DacTinh = null;
+                }
+                else if (entity.LoaiMatHang == Loai.Con)
+                {
+                    entity.DonViTinhId = donViTinhMapping[importItem.DonViTinhTen.Trim()];
+                }
+
+                processedCodes.Add(importItem.Ma);
+                createdEntities.Add(entity);
             }
-            
-            // Lưu tất cả mặt hàng hợp lệ vào database
+
             if (createdEntities.Any())
             {
-                try
-                {
-                    // Sử dụng phương thức có sẵn để thêm các mặt hàng với validation
-                    var savedEntities = await _repository.AddRangeWithValidationAsync(createdEntities);
-                    importedItems = _mapper.Map<List<HHThiTruongDto>>(savedEntities);
-                }
-                catch (Exception ex)
-                {
-                    errors.Add($"Lỗi khi lưu dữ liệu: {ex.Message}");
-                }
+                var savedEntities = await _repository.AddRangeWithValidationAsync(createdEntities);
+                importedItems = _mapper.Map<List<HHThiTruongDto>>(savedEntities);
             }
-            
+
             return (errors.Count == 0 || importedItems.Any(), importedItems, errors);
         }
 
@@ -498,15 +444,15 @@ namespace Application.ServiceImplement.DanhMuc
             }
 
             var exists = await _repository.ExistsByMaInSameLevelAsync(ma, parentId, exceptId);
-            
+
             return new CodeValidationResult
             {
                 IsValid = !exists,
                 Code = ma,
                 ParentId = parentId,
                 ExceptId = exceptId,
-                Message = !exists 
-                    ? "Mã hợp lệ, có thể sử dụng" 
+                Message = !exists
+                    ? "Mã hợp lệ, có thể sử dụng"
                     : "Mã đã tồn tại trong cùng nhóm hàng hóa"
             };
         }
@@ -561,28 +507,10 @@ namespace Application.ServiceImplement.DanhMuc
             return results;
         }
 
-        public async Task<PagedList<HHThiTruongDto>> GetAllDescendantsByParentIdPagedAsync(
-            Guid parentId,
-            PaginationParams paginationParams)
+        public async Task<List<HHThiTruongTreeNodeDto>> GetHierarchicalDescendantsByParentIdAsync(Guid parentId)
         {
-            // Kiểm tra xem mặt hàng cha có tồn tại không
-            var parentExists = await _repository.ExistsAsync(parentId);
-            if (!parentExists)
-            {
-                throw new KeyNotFoundException($"Mặt hàng cha với ID {parentId} không tồn tại");
-            }
-
-            // Lấy danh sách tất cả các mặt hàng con (con và cháu) có phân trang
-            var pagedItems = await ((HHThiTruongRepository)_repository).GetAllDescendantsByParentIdPagedAsync(parentId, paginationParams);
-
-            // Map sang DTO và trả về kết quả
-            var dtos = _mapper.Map<List<HHThiTruongDto>>(pagedItems);
-
-            return new PagedList<HHThiTruongDto>(
-                dtos,
-                pagedItems.TotalCount,
-                pagedItems.CurrentPage,
-                pagedItems.PageSize);
+            var hierarchicalData = await ((HHThiTruongRepository)_repository).GetHierarchicalDescendantsByParentIdAsync(parentId);
+            return _mapper.Map<List<HHThiTruongTreeNodeDto>>(hierarchicalData);
         }
     }
 }

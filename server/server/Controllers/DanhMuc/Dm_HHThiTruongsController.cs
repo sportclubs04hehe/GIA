@@ -502,45 +502,33 @@ namespace server.Controllers.DanhMuc
         }
 
         /// <summary>
-        /// Lấy tất cả mặt hàng con và cháu chắt (mọi cấp) của một mặt hàng cha có phân trang
+        /// Lấy cấu trúc cây mặt hàng thị trường theo ID cha
         /// </summary>
-        /// <param name="parentId">ID của mặt hàng cha</param>
-        /// <param name="paginationParams">Tham số phân trang</param>
-        /// <returns>Danh sách tất cả mặt hàng con, cháu, chắt... có phân trang</returns>
-        [HttpGet("all-descendants/{parentId}")]
-        [ProducesResponseType(typeof(ApiResponse<PagedList<HHThiTruongDto>>), StatusCodes.Status200OK)]
+        [HttpGet("hierarchical/{parentId:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<List<HHThiTruongTreeNodeDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<PagedList<HHThiTruongDto>>>> GetAllDescendantsByParentId(
-            Guid parentId,
-            [FromQuery] PaginationParams paginationParams)
+        public async Task<ActionResult<ApiResponse<List<HHThiTruongTreeNodeDto>>>> GetHierarchicalDescendants(Guid parentId)
         {
             try
             {
-                var result = await _hhThiTruongService.GetAllDescendantsByParentIdPagedAsync(parentId, paginationParams);
+                var result = await _hhThiTruongService.GetHierarchicalDescendantsByParentIdAsync(parentId);
 
-                // Thêm thông tin phân trang vào header
-                Response.AddPaginationHeader(result);
-
-                return Ok(ApiResponse<PagedList<HHThiTruongDto>>.Success(
+                return Ok(ApiResponse<List<HHThiTruongTreeNodeDto>>.Success(
                     data: result,
                     title: THONGBAO,
-                    message: "Lấy danh sách tất cả mặt hàng con thành công"
+                    message: "Lấy cấu trúc cây mặt hàng thành công"
                 ));
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(ApiResponse<PagedList<HHThiTruongDto>>.NotFound(
-                    title: THONGBAO,
-                    message: ex.Message));
+                return NotFound(ApiResponse.NotFound(THONGBAO, ex.Message));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting all descendant items for parent ID: {ParentId}", parentId);
+                _logger.LogError(ex, "Error getting hierarchical structure for parent ID: {ParentId}", parentId);
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    ApiResponse<PagedList<HHThiTruongDto>>.ServerError(
-                        title: THONGBAO,
-                        message: "Có lỗi xảy ra khi lấy danh sách tất cả mặt hàng con"));
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy cấu trúc cây mặt hàng"));
             }
         }
 

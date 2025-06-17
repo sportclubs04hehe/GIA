@@ -1,10 +1,7 @@
 ﻿using Core.Entities.Domain.DanhMuc;
 using Core.Helpers;
 using Core.Interfaces.IGeneric;
-using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
 
 namespace Core.Interfaces.IRepository.IDanhMuc
 {
@@ -26,9 +23,7 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         Task<List<Guid>> GetPathToRootAsync(Guid nodeId);
         Task<List<Dm_HangHoaThiTruong>> GetRootNodesWithRequiredChildrenAsync(List<Guid> pathIds, Guid? newItemId = null);
         Task<List<string>> GetExistingCodesInSameLevelAsync(List<string> codes, Guid? parentId);
-        Task<PagedList<Dm_HangHoaThiTruong>> GetAllDescendantsByParentIdPagedAsync(
-        Guid parentId,
-        PaginationParams paginationParams);
+        Task<List<Dm_HangHoaThiTruong>> GetHierarchicalDescendantsByParentIdAsync(Guid parentId);
 
     }
 }

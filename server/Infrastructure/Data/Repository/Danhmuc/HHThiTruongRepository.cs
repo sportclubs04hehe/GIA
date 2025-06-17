@@ -535,76 +535,89 @@ namespace Infrastructure.Data.DanhMuc.Repository
             return await query.AnyAsync();
         }
 
-        public async Task<PagedList<Dm_HangHoaThiTruong>> GetAllDescendantsByParentIdPagedAsync(
-    Guid parentId,
-    PaginationParams paginationParams)
+        public async Task<List<Dm_HangHoaThiTruong>> GetHierarchicalDescendantsByParentIdAsync(Guid parentId)
         {
+            // Check if parent exists first to avoid unnecessary processing
+            var parentExists = await _dbSet.AnyAsync(x => x.Id == parentId && !x.IsDelete);
+            if (!parentExists)
+                throw new KeyNotFoundException($"Không tìm thấy mặt hàng với ID {parentId}");
+
+            // Use recursive CTE to get all descendants
             var entityType = _context.Model.FindEntityType(typeof(Dm_HangHoaThiTruong));
             string tableName = entityType.GetTableName();
 
-            // Phần count không thay đổi
-            var countSql = $@"
-SELECT COUNT(*)
-FROM (
-    WITH RECURSIVE DescendantCTE AS (
-        SELECT * FROM ""{tableName}"" WHERE ""Id"" = @parentId AND ""IsDelete"" = false
-        UNION ALL
-        SELECT m.* FROM ""{tableName}"" m
-        INNER JOIN DescendantCTE d ON m.""MatHangChaId"" = d.""Id""
-        WHERE m.""IsDelete"" = false
-    )
-    SELECT d.""Id"" FROM DescendantCTE d WHERE d.""Id"" <> @parentId
-) AS CountQuery";
+            // Sửa đổi ORDER BY để sắp xếp Ma theo kiểu số
+            string sql = $@"
+WITH RECURSIVE TreeCTE AS (
+    SELECT * FROM ""{tableName}"" 
+    WHERE ""Id"" = @parentId AND ""IsDelete"" = false
+    
+    UNION ALL
+    
+    SELECT child.* FROM ""{tableName}"" child
+    INNER JOIN TreeCTE parent ON child.""MatHangChaId"" = parent.""Id""
+    WHERE child.""IsDelete"" = false
+)
+SELECT * FROM TreeCTE
+ORDER BY ""LoaiMatHang"", 
+CASE 
+    WHEN ""Ma"" ~ E'^\\d+$' THEN CAST(""Ma"" AS INTEGER) 
+    ELSE 999999 
+END";
 
-            var parameters = new List<NpgsqlParameter>
-    {
+            var parameters = new NpgsqlParameter[] {
         new NpgsqlParameter("@parentId", NpgsqlDbType.Uuid) { Value = parentId }
     };
-            var connection = _context.Database.GetDbConnection() as NpgsqlConnection;
-            if (connection.State != System.Data.ConnectionState.Open)
-                await connection.OpenAsync();
 
-            using var countCommand = new NpgsqlCommand(countSql, connection);
-            countCommand.Parameters.AddRange(parameters.ToArray());
-
-            var totalCount = Convert.ToInt32(await countCommand.ExecuteScalarAsync());
-
-            // Thay đổi cách tiếp cận: Sử dụng CTE nhưng không ánh xạ level vào kết quả cuối cùng
-            string pagedQuery = $@"
-WITH RECURSIVE DescendantCTE AS (
-    SELECT *, 0 as level FROM ""{tableName}"" WHERE ""Id"" = @parentId AND ""IsDelete"" = false
-    UNION ALL
-    SELECT m.*, d.level + 1 FROM ""{tableName}"" m
-    INNER JOIN DescendantCTE d ON m.""MatHangChaId"" = d.""Id""
-    WHERE m.""IsDelete"" = false
-),
-OrderedDescendants AS (
-    SELECT 
-        d.""Id"", d.""CreatedBy"", d.""CreatedDate"", d.""DacTinh"", d.""DonViTinhId"", 
-        d.""GhiChu"", d.""IsDelete"", d.""LoaiMatHang"", d.""Ma"", d.""MatHangChaId"",
-        d.""ModifiedBy"", d.""ModifiedDate"", d.""NgayHetHieuLuc"", d.""NgayHieuLuc"",
-        d.""Ten"", d.""ThuocTinhId""
-    FROM DescendantCTE d
-    WHERE d.""Id"" <> @parentId
-    ORDER BY d.level, d.""LoaiMatHang"", d.""Ma""
-    OFFSET {(paginationParams.PageIndex - 1) * paginationParams.PageSize} ROWS 
-    FETCH NEXT {paginationParams.PageSize} ROWS ONLY
-)
-SELECT * FROM OrderedDescendants";
-
-            var items = await _context.Set<Dm_HangHoaThiTruong>()
-                .FromSqlRaw(pagedQuery, parameters.ToArray())
+            var results = await _dbSet
+                .FromSqlRaw(sql, parameters)
                 .Include(x => x.DonViTinh)
-                .Include(x => x.MatHangCha)
                 .AsNoTracking()
                 .ToListAsync();
 
-            return new PagedList<Dm_HangHoaThiTruong>(
-                items,
-                totalCount,
-                paginationParams.PageIndex,
-                paginationParams.PageSize);
+            // Build tree structure efficiently
+            var nodeMap = results.ToDictionary(x => x.Id);
+            var rootNodes = new List<Dm_HangHoaThiTruong>();
+
+            // Find and add the root node
+            var root = results.FirstOrDefault(x => x.Id == parentId);
+            if (root != null)
+            {
+                root.MatHangCon = new List<Dm_HangHoaThiTruong>();
+                rootNodes.Add(root);
+            }
+
+            // Group children by their parent ID for efficient processing with numeric sorting
+            var childrenByParent = results
+                .Where(x => x.Id != parentId && x.MatHangChaId.HasValue)
+                .GroupBy(x => x.MatHangChaId.Value)
+                .ToDictionary(g => g.Key, g => SortByNumericMa(g.ToList()));
+
+            // Build parent-child relationships
+            foreach (var parentNodeId in childrenByParent.Keys)
+            {
+                if (nodeMap.TryGetValue(parentNodeId, out var parentNode))
+                {
+                    parentNode.MatHangCon = childrenByParent[parentNodeId];
+                }
+            }
+
+            return rootNodes;
         }
+
+        // Hàm hỗ trợ để sắp xếp theo mã số
+        private List<Dm_HangHoaThiTruong> SortByNumericMa(List<Dm_HangHoaThiTruong> items)
+        {
+            return items.OrderBy(x => {
+                // Kiểm tra nếu mã chỉ chứa số
+                if (int.TryParse(x.Ma, out int numericValue))
+                    return numericValue;
+
+                // Nếu không phải số, giữ nguyên thứ tự
+                return int.MaxValue;
+            }).ToList();
+        }
+
 
     }
 }
