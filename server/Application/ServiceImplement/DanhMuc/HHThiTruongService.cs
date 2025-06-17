@@ -561,6 +561,28 @@ namespace Application.ServiceImplement.DanhMuc
             return results;
         }
 
+        public async Task<PagedList<HHThiTruongDto>> GetAllDescendantsByParentIdPagedAsync(
+            Guid parentId,
+            PaginationParams paginationParams)
+        {
+            // Kiểm tra xem mặt hàng cha có tồn tại không
+            var parentExists = await _repository.ExistsAsync(parentId);
+            if (!parentExists)
+            {
+                throw new KeyNotFoundException($"Mặt hàng cha với ID {parentId} không tồn tại");
+            }
 
+            // Lấy danh sách tất cả các mặt hàng con (con và cháu) có phân trang
+            var pagedItems = await ((HHThiTruongRepository)_repository).GetAllDescendantsByParentIdPagedAsync(parentId, paginationParams);
+
+            // Map sang DTO và trả về kết quả
+            var dtos = _mapper.Map<List<HHThiTruongDto>>(pagedItems);
+
+            return new PagedList<HHThiTruongDto>(
+                dtos,
+                pagedItems.TotalCount,
+                pagedItems.CurrentPage,
+                pagedItems.PageSize);
+        }
     }
 }

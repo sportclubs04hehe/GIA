@@ -19,6 +19,9 @@ namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
         // Thêm thuộc tính này
         public Guid? MatHangChaId { get; set; }
         public string? TenMatHangCha { get; set; }
+        
+        // Thêm thuộc tính cấp độ
+        public int Level { get; set; }
 
         // Thuộc tính cho hàng hóa
         public string? DacTinh { get; set; }

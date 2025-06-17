@@ -1,11 +1,8 @@
 ﻿using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
 using Application.ServiceInterface.INghiepVu;
 using Core.Helpers;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using server.Errors;
-using System;
-using System.Threading.Tasks;
 
 namespace server.Controllers.NghiepVu
 {

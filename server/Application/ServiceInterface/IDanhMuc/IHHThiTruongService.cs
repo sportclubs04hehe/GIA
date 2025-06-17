@@ -26,5 +26,8 @@ namespace Application.ServiceInterface.IDanhMuc
             HHThiTruongBatchImportDto importDto);
         Task<CodeValidationResult> ValidateCodeAsync(string ma, Guid? parentId = null, Guid? exceptId = null);
         Task<List<CodeValidationResult>> ValidateMultipleCodesAsync(List<string> codes, Guid? parentId = null);
+        Task<PagedList<HHThiTruongDto>> GetAllDescendantsByParentIdPagedAsync(
+            Guid parentId,
+            PaginationParams paginationParams);
     }
 }

@@ -26,5 +26,9 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         Task<List<Guid>> GetPathToRootAsync(Guid nodeId);
         Task<List<Dm_HangHoaThiTruong>> GetRootNodesWithRequiredChildrenAsync(List<Guid> pathIds, Guid? newItemId = null);
         Task<List<string>> GetExistingCodesInSameLevelAsync(List<string> codes, Guid? parentId);
+        Task<PagedList<Dm_HangHoaThiTruong>> GetAllDescendantsByParentIdPagedAsync(
+        Guid parentId,
+        PaginationParams paginationParams);
+
     }
 }

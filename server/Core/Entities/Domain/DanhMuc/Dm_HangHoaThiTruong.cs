@@ -18,6 +18,9 @@ namespace Core.Entities.Domain.DanhMuc
         // Phân loại: 0 = Nhóm, 1 = Hàng hóa
         public Loai LoaiMatHang { get; set; }
 
+        [NotMapped] 
+        public int Level { get; set; }
+
         // Quan hệ phân cấp
         public Guid? MatHangChaId { get; set; }
 

@@ -5,6 +5,8 @@ using Core.Interfaces.IRepository.IDanhMuc;
 using Infrastructure.Data.Generic;
 using Infrastructure.Data.Utilities;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 using System.Linq.Expressions;
 
 namespace Infrastructure.Data.DanhMuc.Repository
@@ -41,7 +43,7 @@ namespace Infrastructure.Data.DanhMuc.Repository
                 .Include(x => x.MatHangCon.Where(c => !c.IsDelete))
                 .Include(x => x.DonViTinh)
                 .Include(x => x.MatHangCha)
-                .AsSplitQuery() 
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
         }
 
@@ -82,7 +84,7 @@ namespace Infrastructure.Data.DanhMuc.Repository
         {
             var entity = await GetWithChildrenAsync(id);
             if (entity == null) return false;
-            
+
             await DeleteEntityWithChildren(entity);
             await _context.SaveChangesAsync();
             return true;
@@ -96,9 +98,9 @@ namespace Infrastructure.Data.DanhMuc.Repository
             {
                 var entity = await GetWithChildrenAsync(id);
                 if (entity == null) return false;
-                
+
                 await DeleteEntityWithChildren(entity);
-                
+
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return true;
@@ -147,12 +149,12 @@ namespace Infrastructure.Data.DanhMuc.Repository
             {
                 // Group entities by parent to validate code uniqueness within same level
                 var groupedByParent = entities.GroupBy(e => e.MatHangChaId);
-                
+
                 foreach (var group in groupedByParent)
                 {
                     var parentId = group.Key;
                     var entitiesInGroup = group.ToList();
-                    
+
                     // Check for duplicate codes within the current batch
                     var codeGroups = entitiesInGroup.GroupBy(e => e.Ma).Where(g => g.Count() > 1);
                     if (codeGroups.Any())
@@ -160,20 +162,20 @@ namespace Infrastructure.Data.DanhMuc.Repository
                         var duplicateCodes = string.Join(", ", codeGroups.Select(g => $"'{g.Key}'"));
                         throw new ArgumentException($"Các mã {duplicateCodes} bị trùng lặp trong cùng một nhóm");
                     }
-                    
+
                     // Check for existing codes in the database at the same level
                     var codes = entitiesInGroup.Select(e => e.Ma).ToList();
                     var existingCodes = await _dbSet
                         .Where(x => !x.IsDelete && x.MatHangChaId == parentId && codes.Contains(x.Ma))
                         .Select(x => x.Ma)
                         .ToListAsync();
-                        
+
                     if (existingCodes.Any())
                     {
                         throw new ArgumentException($"Các mã '{string.Join("', '", existingCodes)}' đã tồn tại trong cùng nhóm hàng hóa");
                     }
                 }
-                
+
                 var result = await base.AddRangeAsync(entities);
                 await transaction.CommitAsync();
                 return result;
@@ -251,13 +253,13 @@ namespace Infrastructure.Data.DanhMuc.Repository
                 .Where(x => !x.IsDelete && (parentIds.Contains(x.Id) || matchingItemIds.Contains(x.Id)))
                 .Include(x => x.DonViTinh)
                 .ToListAsync();
-            
+
             // Xây dựng map cho việc tìm nhanh
             var nodeMap = allNodes.ToDictionary(x => x.Id);
-            
+
             // Danh sách các nodes gốc cần trả về
             var rootNodes = new List<Dm_HangHoaThiTruong>();
-            
+
             // Tìm và thêm các nodes gốc
             foreach (var node in allNodes)
             {
@@ -272,11 +274,11 @@ namespace Infrastructure.Data.DanhMuc.Repository
                     var parent = nodeMap[node.MatHangChaId.Value];
                     if (parent.MatHangCon == null)
                         parent.MatHangCon = new List<Dm_HangHoaThiTruong>();
-                        
+
                     parent.MatHangCon.Add(node);
                 }
             }
-            
+
             return rootNodes;
         }
 
@@ -293,8 +295,8 @@ namespace Infrastructure.Data.DanhMuc.Repository
                 : query.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
 
             return await PagedList<Dm_HangHoaThiTruong>.CreateAsync(
-                query, 
-                paginationParams.PageIndex, 
+                query,
+                paginationParams.PageIndex,
                 paginationParams.PageSize);
         }
 
@@ -307,16 +309,16 @@ namespace Infrastructure.Data.DanhMuc.Repository
                 .OrderBy(x => x.Ten)
                 .AsNoTracking()
                 .ToListAsync();
-            
+
             var categoryIdsWithChildren = await _dbSet
                 .Where(x => !x.IsDelete && x.MatHangChaId.HasValue)
                 .Select(x => x.MatHangChaId.Value)
                 .Distinct()
                 .ToListAsync();
-            
+
             // Tạo một HashSet cho việc kiểm tra hiệu quả
             var categoryIdsWithChildrenSet = new HashSet<Guid>(categoryIdsWithChildren);
-            
+
             // Ghép các kết quả lại
             return categories
                 .Select(c => (c, categoryIdsWithChildrenSet.Contains(c.Id)))
@@ -532,5 +534,77 @@ namespace Infrastructure.Data.DanhMuc.Repository
 
             return await query.AnyAsync();
         }
+
+        public async Task<PagedList<Dm_HangHoaThiTruong>> GetAllDescendantsByParentIdPagedAsync(
+    Guid parentId,
+    PaginationParams paginationParams)
+        {
+            var entityType = _context.Model.FindEntityType(typeof(Dm_HangHoaThiTruong));
+            string tableName = entityType.GetTableName();
+
+            // Phần count không thay đổi
+            var countSql = $@"
+SELECT COUNT(*)
+FROM (
+    WITH RECURSIVE DescendantCTE AS (
+        SELECT * FROM ""{tableName}"" WHERE ""Id"" = @parentId AND ""IsDelete"" = false
+        UNION ALL
+        SELECT m.* FROM ""{tableName}"" m
+        INNER JOIN DescendantCTE d ON m.""MatHangChaId"" = d.""Id""
+        WHERE m.""IsDelete"" = false
+    )
+    SELECT d.""Id"" FROM DescendantCTE d WHERE d.""Id"" <> @parentId
+) AS CountQuery";
+
+            var parameters = new List<NpgsqlParameter>
+    {
+        new NpgsqlParameter("@parentId", NpgsqlDbType.Uuid) { Value = parentId }
+    };
+            var connection = _context.Database.GetDbConnection() as NpgsqlConnection;
+            if (connection.State != System.Data.ConnectionState.Open)
+                await connection.OpenAsync();
+
+            using var countCommand = new NpgsqlCommand(countSql, connection);
+            countCommand.Parameters.AddRange(parameters.ToArray());
+
+            var totalCount = Convert.ToInt32(await countCommand.ExecuteScalarAsync());
+
+            // Thay đổi cách tiếp cận: Sử dụng CTE nhưng không ánh xạ level vào kết quả cuối cùng
+            string pagedQuery = $@"
+WITH RECURSIVE DescendantCTE AS (
+    SELECT *, 0 as level FROM ""{tableName}"" WHERE ""Id"" = @parentId AND ""IsDelete"" = false
+    UNION ALL
+    SELECT m.*, d.level + 1 FROM ""{tableName}"" m
+    INNER JOIN DescendantCTE d ON m.""MatHangChaId"" = d.""Id""
+    WHERE m.""IsDelete"" = false
+),
+OrderedDescendants AS (
+    SELECT 
+        d.""Id"", d.""CreatedBy"", d.""CreatedDate"", d.""DacTinh"", d.""DonViTinhId"", 
+        d.""GhiChu"", d.""IsDelete"", d.""LoaiMatHang"", d.""Ma"", d.""MatHangChaId"",
+        d.""ModifiedBy"", d.""ModifiedDate"", d.""NgayHetHieuLuc"", d.""NgayHieuLuc"",
+        d.""Ten"", d.""ThuocTinhId""
+    FROM DescendantCTE d
+    WHERE d.""Id"" <> @parentId
+    ORDER BY d.level, d.""LoaiMatHang"", d.""Ma""
+    OFFSET {(paginationParams.PageIndex - 1) * paginationParams.PageSize} ROWS 
+    FETCH NEXT {paginationParams.PageSize} ROWS ONLY
+)
+SELECT * FROM OrderedDescendants";
+
+            var items = await _context.Set<Dm_HangHoaThiTruong>()
+                .FromSqlRaw(pagedQuery, parameters.ToArray())
+                .Include(x => x.DonViTinh)
+                .Include(x => x.MatHangCha)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return new PagedList<Dm_HangHoaThiTruong>(
+                items,
+                totalCount,
+                paginationParams.PageIndex,
+                paginationParams.PageSize);
+        }
+
     }
 }

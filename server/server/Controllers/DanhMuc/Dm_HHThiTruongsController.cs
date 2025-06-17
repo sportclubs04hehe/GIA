@@ -10,10 +10,10 @@ namespace server.Controllers.DanhMuc
 {
     public class Dm_HHThiTruongsController : BaseApiController
     {
-        private readonly IHHThiTruongService _hhThiTruongService;   
+        private readonly IHHThiTruongService _hhThiTruongService;
         private readonly ILogger<Dm_HHThiTruongsController> _logger;
 
-        public Dm_HHThiTruongsController(IHHThiTruongService hhThiTruongService, 
+        public Dm_HHThiTruongsController(IHHThiTruongService hhThiTruongService,
             ILogger<Dm_HHThiTruongsController> logger)
         {
             _hhThiTruongService = hhThiTruongService ?? throw new ArgumentNullException(nameof(hhThiTruongService));
@@ -41,7 +41,7 @@ namespace server.Controllers.DanhMuc
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving market product with ID: {Id}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError, 
+                return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy thông tin mặt hàng"));
             }
         }
@@ -121,7 +121,7 @@ namespace server.Controllers.DanhMuc
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating market product");
-                return StatusCode(StatusCodes.Status500InternalServerError, 
+                return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi thêm mới mặt hàng thị trường"));
             }
         }
@@ -186,7 +186,7 @@ namespace server.Controllers.DanhMuc
                         message: "Xóa mặt hàng thị trường thành công"
                     ));
                 }
-                
+
                 return NotFound(ApiResponse<Guid>.NotFound(
                     message: "Không tìm thấy mặt hàng thị trường"
                 ));
@@ -268,7 +268,7 @@ namespace server.Controllers.DanhMuc
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating multiple market products");
-                return StatusCode(StatusCodes.Status500InternalServerError, 
+                return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi thêm nhiều mặt hàng thị trường"));
             }
         }
@@ -280,7 +280,7 @@ namespace server.Controllers.DanhMuc
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<PagedList<HHThiTruongTreeNodeDto>>> GetChildrenByParent(
-            Guid parentId, 
+            Guid parentId,
             [FromQuery] PaginationParams paginationParams)
         {
             return await ExecutePagedAsync(() => _hhThiTruongService.GetChildrenByParentIdPagedAsync(parentId, paginationParams));
@@ -446,12 +446,12 @@ namespace server.Controllers.DanhMuc
             try
             {
                 var result = await _hhThiTruongService.ValidateCodeAsync(ma, parentId, exceptId);
-                
+
                 return Ok(ApiResponse<CodeValidationResult>.Success(
                     data: result,
                     title: THONGBAO,
-                    message: result.IsValid 
-                        ? "Mã hợp lệ" 
+                    message: result.IsValid
+                        ? "Mã hợp lệ"
                         : "Mã không hợp lệ"
                 ));
             }
@@ -500,5 +500,49 @@ namespace server.Controllers.DanhMuc
                     ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi kiểm tra mã mặt hàng"));
             }
         }
+
+        /// <summary>
+        /// Lấy tất cả mặt hàng con và cháu chắt (mọi cấp) của một mặt hàng cha có phân trang
+        /// </summary>
+        /// <param name="parentId">ID của mặt hàng cha</param>
+        /// <param name="paginationParams">Tham số phân trang</param>
+        /// <returns>Danh sách tất cả mặt hàng con, cháu, chắt... có phân trang</returns>
+        [HttpGet("all-descendants/{parentId}")]
+        [ProducesResponseType(typeof(ApiResponse<PagedList<HHThiTruongDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<PagedList<HHThiTruongDto>>>> GetAllDescendantsByParentId(
+            Guid parentId,
+            [FromQuery] PaginationParams paginationParams)
+        {
+            try
+            {
+                var result = await _hhThiTruongService.GetAllDescendantsByParentIdPagedAsync(parentId, paginationParams);
+
+                // Thêm thông tin phân trang vào header
+                Response.AddPaginationHeader(result);
+
+                return Ok(ApiResponse<PagedList<HHThiTruongDto>>.Success(
+                    data: result,
+                    title: THONGBAO,
+                    message: "Lấy danh sách tất cả mặt hàng con thành công"
+                ));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<PagedList<HHThiTruongDto>>.NotFound(
+                    title: THONGBAO,
+                    message: ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all descendant items for parent ID: {ParentId}", parentId);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<PagedList<HHThiTruongDto>>.ServerError(
+                        title: THONGBAO,
+                        message: "Có lỗi xảy ra khi lấy danh sách tất cả mặt hàng con"));
+            }
+        }
+
     }
 }
