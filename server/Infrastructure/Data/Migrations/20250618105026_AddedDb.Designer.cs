@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(StoreContext))]
-    [Migration("20250616103639_AddedDb")]
+    [Migration("20250618105026_AddedDb")]
     partial class AddedDb
     {
         /// <inheritdoc />
@@ -195,7 +195,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("Ma", "MatHangChaId")
                         .IsUnique();
 
-                    b.ToTable("MatHang");
+                    b.ToTable("Dm_HangHoaThiTruong");
                 });
 
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_LoaiGia", b =>

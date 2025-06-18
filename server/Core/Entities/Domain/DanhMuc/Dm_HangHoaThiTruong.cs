@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Core.Entities.Domain.DanhMuc
 {
-    [Table("MatHang")]
+    [Table("Dm_HangHoaThiTruong")]
     public class Dm_HangHoaThiTruong : BaseIdentity
     {
         // Thuộc tính chung

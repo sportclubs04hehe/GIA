@@ -192,7 +192,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("Ma", "MatHangChaId")
                         .IsUnique();
 
-                    b.ToTable("MatHang");
+                    b.ToTable("Dm_HangHoaThiTruong");
                 });
 
             modelBuilder.Entity("Core.Entities.Domain.DanhMuc.Dm_LoaiGia", b =>

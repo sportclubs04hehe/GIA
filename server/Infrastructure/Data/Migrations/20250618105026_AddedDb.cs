@@ -112,7 +112,7 @@ namespace Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MatHang",
+                name: "Dm_HangHoaThiTruong",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -134,22 +134,22 @@ namespace Infrastructure.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MatHang", x => x.Id);
+                    table.PrimaryKey("PK_Dm_HangHoaThiTruong", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MatHang_Dm_ThuocTinh_ThuocTinhId",
+                        name: "FK_Dm_HangHoaThiTruong_Dm_HangHoaThiTruong_MatHangChaId",
+                        column: x => x.MatHangChaId,
+                        principalTable: "Dm_HangHoaThiTruong",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Dm_HangHoaThiTruong_Dm_ThuocTinh_ThuocTinhId",
                         column: x => x.ThuocTinhId,
                         principalTable: "Dm_ThuocTinh",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MatHang_DonViTinh_DonViTinhId",
+                        name: "FK_Dm_HangHoaThiTruong_DonViTinh_DonViTinhId",
                         column: x => x.DonViTinhId,
                         principalTable: "DonViTinh",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_MatHang_MatHang_MatHangChaId",
-                        column: x => x.MatHangChaId,
-                        principalTable: "MatHang",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -210,18 +210,49 @@ namespace Infrastructure.Data.Migrations
                 {
                     table.PrimaryKey("PK_ThuThapGiaThiTruongs", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_ThuThapGiaThiTruongs_Dm_HangHoaThiTruong_HangHoaId",
+                        column: x => x.HangHoaId,
+                        principalTable: "Dm_HangHoaThiTruong",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_ThuThapGiaThiTruongs_LoaiGias_LoaiGiaId",
                         column: x => x.LoaiGiaId,
                         principalTable: "LoaiGias",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_ThuThapGiaThiTruongs_MatHang_HangHoaId",
-                        column: x => x.HangHoaId,
-                        principalTable: "MatHang",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dm_HangHoaThiTruong_DonViTinhId",
+                table: "Dm_HangHoaThiTruong",
+                column: "DonViTinhId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dm_HangHoaThiTruong_IsDelete",
+                table: "Dm_HangHoaThiTruong",
+                column: "IsDelete");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dm_HangHoaThiTruong_LoaiMatHang",
+                table: "Dm_HangHoaThiTruong",
+                column: "LoaiMatHang");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dm_HangHoaThiTruong_Ma_MatHangChaId",
+                table: "Dm_HangHoaThiTruong",
+                columns: new[] { "Ma", "MatHangChaId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dm_HangHoaThiTruong_MatHangChaId",
+                table: "Dm_HangHoaThiTruong",
+                column: "MatHangChaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dm_HangHoaThiTruong_ThuocTinhId",
+                table: "Dm_HangHoaThiTruong",
+                column: "ThuocTinhId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Dm_ThuocTinh_ThuocTinhChaId",
@@ -243,37 +274,6 @@ namespace Infrastructure.Data.Migrations
                 table: "LoaiGias",
                 column: "Ma",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MatHang_DonViTinhId",
-                table: "MatHang",
-                column: "DonViTinhId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MatHang_IsDelete",
-                table: "MatHang",
-                column: "IsDelete");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MatHang_LoaiMatHang",
-                table: "MatHang",
-                column: "LoaiMatHang");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MatHang_Ma_MatHangChaId",
-                table: "MatHang",
-                columns: new[] { "Ma", "MatHangChaId" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MatHang_MatHangChaId",
-                table: "MatHang",
-                column: "MatHangChaId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MatHang_ThuocTinhId",
-                table: "MatHang",
-                column: "ThuocTinhId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_NhomHangHoa_NhomChaId",
@@ -325,10 +325,10 @@ namespace Infrastructure.Data.Migrations
                 name: "NhomHangHoa");
 
             migrationBuilder.DropTable(
-                name: "LoaiGias");
+                name: "Dm_HangHoaThiTruong");
 
             migrationBuilder.DropTable(
-                name: "MatHang");
+                name: "LoaiGias");
 
             migrationBuilder.DropTable(
                 name: "Dm_ThuocTinh");
