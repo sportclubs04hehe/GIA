@@ -199,7 +199,13 @@ namespace Infrastructure.Data.Migrations
                     NgayThuThap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     HangHoaId = table.Column<Guid>(type: "uuid", nullable: false),
                     LoaiGiaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    LoaiNghiepVu = table.Column<int>(type: "integer", nullable: false),
+                    GiaPhoBienKyBaoCao = table.Column<decimal>(type: "numeric", nullable: true),
+                    GiaBinhQuanKyNay = table.Column<decimal>(type: "numeric", nullable: true),
+                    NguonThongTin = table.Column<string>(type: "text", nullable: true),
+                    GhiChu = table.Column<string>(type: "text", nullable: true),
+                    GiaBinhQuanKyTruoc = table.Column<decimal>(type: "numeric", nullable: true),
+                    MucTangGiam = table.Column<decimal>(type: "numeric", nullable: true),
+                    TyLeTangGiam = table.Column<decimal>(type: "numeric", nullable: true),
                     IsDelete = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -296,19 +302,14 @@ namespace Infrastructure.Data.Migrations
                 column: "LoaiGiaId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ThuThapGiaThiTruongs_LoaiNghiepVu",
-                table: "ThuThapGiaThiTruongs",
-                column: "LoaiNghiepVu");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ThuThapGiaThiTruongs_NgayThuThap",
                 table: "ThuThapGiaThiTruongs",
                 column: "NgayThuThap");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ThuThapGiaThiTruongs_NgayThuThap_HangHoaId_LoaiGiaId_LoaiNg~",
+                name: "IX_ThuThapGiaThiTruongs_NgayThuThap_HangHoaId_LoaiGiaId",
                 table: "ThuThapGiaThiTruongs",
-                columns: new[] { "NgayThuThap", "HangHoaId", "LoaiGiaId", "LoaiNghiepVu" },
+                columns: new[] { "NgayThuThap", "HangHoaId", "LoaiGiaId" },
                 unique: true);
         }
 

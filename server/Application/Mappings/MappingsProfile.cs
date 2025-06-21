@@ -15,6 +15,14 @@ namespace Application.Mappings
         public MappingsProfile()
         {
             #region DM Hàng hóa thị trường 
+
+            
+            CreateMap<Dm_HangHoaThiTruong, HangHoaGiaThiTruongDto>()
+                .ForMember(d => d.MatHangCon, o => o.MapFrom(s => s.MatHangCon.Where(c => !c.IsDelete)))
+                .ForMember(d => d.TenDonViTinh, o => o.MapFrom(s => s.DonViTinh != null ? s.DonViTinh.Ten : null))
+                .ForMember(d => d.DacTinh, o => o.MapFrom(s => s.DacTinh))
+                .ForMember(d => d.GiaBinhQuanKyTruoc, o => o.Ignore()); // Sẽ được set sau khi query giá
+
             CreateMap<Dm_HangHoaThiTruong, HHThiTruongDto>()
                .ForMember(d => d.TenMatHangCha, o => o.MapFrom(s => s.MatHangCha != null ? s.MatHangCha.Ten : null))
                .ForMember(d => d.TenDonViTinh, o => o.MapFrom(s => s.DonViTinh != null ? s.DonViTinh.Ten : null));
@@ -118,18 +126,16 @@ namespace Application.Mappings
             #endregion
 
             #region Thu Thập Giá Thị Trường
-            // Map entity to DTO
+            // Map entity to DTO - add mapping for the new fields
             CreateMap<ThuThapGiaThiTruong, ThuThapGiaThiTruongDto>()
                 .ForMember(d => d.MaHangHoa, o => o.MapFrom(s => s.HangHoa != null ? s.HangHoa.Ma : null))
                 .ForMember(d => d.TenHangHoa, o => o.MapFrom(s => s.HangHoa != null ? s.HangHoa.Ten : null))
                 .ForMember(d => d.TenLoaiGia, o => o.MapFrom(s => s.LoaiGia != null ? s.LoaiGia.Ten : null));
 
-            // Map create DTO to entity
             CreateMap<ThuThapGiaThiTruongCreateDto, ThuThapGiaThiTruong>()
                 .ForMember(dest => dest.NgayThuThap,
                     opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayThuThap));
 
-            // Map update DTO to entity
             CreateMap<ThuThapGiaThiTruongUpdateDto, ThuThapGiaThiTruong>();
             #endregion
         }

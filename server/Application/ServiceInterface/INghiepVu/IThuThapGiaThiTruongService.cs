@@ -21,5 +21,10 @@ namespace Application.ServiceInterface.INghiepVu
         
         // Check if exists
         Task<bool> ExistsAsync(Guid id);
+
+        Task<List<HangHoaGiaThiTruongDto>> GetHierarchicalDataWithPreviousPricesAsync(
+            Guid parentId,
+            DateTime ngayThuThap,
+            Guid loaiGiaId);
     }
 }

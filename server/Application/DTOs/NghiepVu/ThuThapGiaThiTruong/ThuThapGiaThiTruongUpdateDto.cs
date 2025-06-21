@@ -16,5 +16,11 @@ namespace Application.DTOs.NghiepVu.ThuThapGiaThiTruong
 
         [Required(ErrorMessage = "Loại giá là bắt buộc")]
         public Guid LoaiGiaId { get; set; }
+
+        // Add these fields
+        public decimal? GiaPhoBienKyBaoCao { get; set; }
+        public decimal? GiaBinhQuanKyNay { get; set; }
+        public string? NguonThongTin { get; set; }
+        public string? GhiChu { get; set; }
     }
 }

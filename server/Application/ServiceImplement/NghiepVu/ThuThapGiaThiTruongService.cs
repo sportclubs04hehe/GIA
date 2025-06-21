@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
+﻿using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
 using Application.ServiceInterface.INghiepVu;
 using AutoMapper;
-using Core.Entities.Domain.DanhMuc.Enum;
+using Core.Entities.Domain.DanhMuc;
 using Core.Entities.Domain.NghiepVu;
 using Core.Helpers;
 using Core.Interfaces.IRepository.INghiepVu;
@@ -28,7 +24,6 @@ namespace Application.ServiceImplement.NghiepVu
         public async Task<ThuThapGiaThiTruongDto> CreateAsync(ThuThapGiaThiTruongCreateDto createDto)
         {
             var entity = _mapper.Map<ThuThapGiaThiTruong>(createDto);
-            entity.LoaiNghiepVu = LoaiNghiepVu.HH29;
 
             var result = await _repository.AddAsync(entity);
             
@@ -87,9 +82,57 @@ namespace Application.ServiceImplement.NghiepVu
             if (entity == null) return false;
             
             _mapper.Map(updateDto, entity);
-            entity.LoaiNghiepVu = LoaiNghiepVu.HH29;
             
             return await _repository.UpdateAsync(entity);
+        }
+
+        public async Task<List<HangHoaGiaThiTruongDto>> GetHierarchicalDataWithPreviousPricesAsync(
+          Guid parentId,
+          DateTime ngayThuThap,
+          Guid loaiGiaId)
+        {
+            var hierarchicalData = await _repository.GetHierarchicalDataWithPreviousPricesAsync(
+                parentId, ngayThuThap, loaiGiaId);
+
+            var result = _mapper.Map<List<HangHoaGiaThiTruongDto>>(hierarchicalData);
+            
+            // Lấy giá kỳ trước và set vào DTO
+            var hangHoaIds = GetAllHangHoaIds(result);
+            var previousPrices = await _repository.GetPreviousPricesAsync(hangHoaIds, ngayThuThap, loaiGiaId);
+            
+            SetPreviousPrices(result, previousPrices);
+            
+            return result;
+        }
+
+        private List<Guid> GetAllHangHoaIds(List<HangHoaGiaThiTruongDto> items)
+        {
+            var ids = new List<Guid>();
+            foreach (var item in items)
+            {
+                ids.Add(item.Id);
+                if (item.MatHangCon?.Any() == true)
+                {
+                    ids.AddRange(GetAllHangHoaIds(item.MatHangCon));
+                }
+            }
+            return ids;
+        }
+
+        private void SetPreviousPrices(List<HangHoaGiaThiTruongDto> items, Dictionary<Guid, decimal?> previousPrices)
+        {
+            foreach (var item in items)
+            {
+                if (previousPrices.TryGetValue(item.Id, out var price))
+                {
+                    item.GiaBinhQuanKyTruoc = price;
+                }
+
+                if (item.MatHangCon?.Any() == true)
+                {
+                    SetPreviousPrices(item.MatHangCon, previousPrices);
+                }
+            }
         }
     }
 }

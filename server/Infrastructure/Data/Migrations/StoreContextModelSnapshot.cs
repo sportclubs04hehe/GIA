@@ -359,6 +359,18 @@ namespace Infrastructure.Data.Migrations
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("GhiChu")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("GiaBinhQuanKyNay")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("GiaBinhQuanKyTruoc")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("GiaPhoBienKyBaoCao")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid>("HangHoaId")
                         .HasColumnType("uuid");
 
@@ -368,17 +380,23 @@ namespace Infrastructure.Data.Migrations
                     b.Property<Guid>("LoaiGiaId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("LoaiNghiepVu")
-                        .HasColumnType("integer");
-
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("ModifiedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal?>("MucTangGiam")
+                        .HasColumnType("numeric");
+
                     b.Property<DateTime>("NgayThuThap")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NguonThongTin")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("TyLeTangGiam")
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
@@ -388,11 +406,9 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("LoaiGiaId");
 
-                    b.HasIndex("LoaiNghiepVu");
-
                     b.HasIndex("NgayThuThap");
 
-                    b.HasIndex("NgayThuThap", "HangHoaId", "LoaiGiaId", "LoaiNghiepVu")
+                    b.HasIndex("NgayThuThap", "HangHoaId", "LoaiGiaId")
                         .IsUnique();
 
                     b.ToTable("ThuThapGiaThiTruongs");

@@ -10,12 +10,15 @@ namespace Infrastructure.Data
         {
         }
 
+        // Danh Muc
         public DbSet<Dm_NhomHangHoa> NhomHangHoas { get; set; }
         public DbSet<Dm_HangHoa> HangHoas { get; set; }
         public DbSet<Dm_DonViTinh> DonViTinhs { get; set; }
-        public DbSet<Dm_HangHoaThiTruong> MatHangs { get; set; }
+        public DbSet<Dm_HangHoaThiTruong> Dm_HangHoaThiTruongs { get; set; }
         public DbSet<Dm_ThuocTinh> ThuocTinhs { get; set; }
         public DbSet<Dm_LoaiGia> LoaiGias { get; set; }
+
+        // Nghiep Vu
         public DbSet<ThuThapGiaThiTruong> ThuThapGiaThiTruongs { get; set; }
 
 
@@ -75,7 +78,7 @@ namespace Infrastructure.Data
 
             // Chỉ mục cho ThuThapGiaThiTruong
             modelBuilder.Entity<ThuThapGiaThiTruong>()
-                .HasIndex(t => new { t.NgayThuThap, t.HangHoaId, t.LoaiGiaId, t.LoaiNghiepVu })
+                .HasIndex(t => new { t.NgayThuThap, t.HangHoaId, t.LoaiGiaId })
                 .IsUnique();
 
             modelBuilder.Entity<ThuThapGiaThiTruong>()
@@ -86,9 +89,6 @@ namespace Infrastructure.Data
 
             modelBuilder.Entity<ThuThapGiaThiTruong>()
                 .HasIndex(t => t.LoaiGiaId);
-
-            modelBuilder.Entity<ThuThapGiaThiTruong>()
-                .HasIndex(t => t.LoaiNghiepVu);
 
             modelBuilder.Entity<ThuThapGiaThiTruong>()
                 .HasIndex(t => t.IsDelete);

@@ -46,11 +46,11 @@ namespace server.Controllers.NghiepVu
         public async Task<ActionResult<ApiResponse<ThuThapGiaThiTruongDto>>> GetById(Guid id)
         {
             var entity = await _service.GetByIdAsync(id);
-            
+
             if (entity == null)
                 return NotFound(ApiResponse<ThuThapGiaThiTruongDto>.NotFound(
                     message: $"Không tìm thấy dữ liệu giá thị trường với ID: {id}"));
-            
+
             return Ok(ApiResponse<ThuThapGiaThiTruongDto>.Success(entity));
         }
 
@@ -65,11 +65,11 @@ namespace server.Controllers.NghiepVu
         {
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<ThuThapGiaThiTruongDto>.BadRequest(
-                    message: "Dữ liệu không hợp lệ", 
+                    message: "Dữ liệu không hợp lệ",
                     errors: ModelState));
-            
+
             var result = await _service.CreateAsync(createDto);
-            
+
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = result.Id },
@@ -90,9 +90,9 @@ namespace server.Controllers.NghiepVu
         {
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<Guid>.BadRequest(
-                    message: "Dữ liệu không hợp lệ", 
+                    message: "Dữ liệu không hợp lệ",
                     errors: ModelState));
-            
+
             return await ExecuteWithExistenceCheckAsync(
                 updateDto.Id,
                 () => _service.ExistsAsync(updateDto.Id),
@@ -117,6 +117,22 @@ namespace server.Controllers.NghiepVu
                 notFoundMessage: $"Không tìm thấy dữ liệu giá thị trường với ID: {id}",
                 successMessage: "Xóa dữ liệu giá thị trường thành công",
                 failureMessage: "Không thể xóa dữ liệu giá thị trường");
+        }
+
+        [HttpGet("hierarchical")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<ApiResponse<List<HangHoaGiaThiTruongDto>>>> GetHierarchicalDataWithPreviousPrices(
+    [FromQuery] Guid parentId,
+    [FromQuery] DateTime ngayThuThap,
+    [FromQuery] Guid loaiGiaId)
+        {
+            var result = await _service.GetHierarchicalDataWithPreviousPricesAsync(
+                parentId, ngayThuThap, loaiGiaId);
+
+            return Ok(ApiResponse<List<HangHoaGiaThiTruongDto>>.Success(
+                result,
+                "Dữ liệu phân cấp hàng hóa",
+                "Lấy dữ liệu phân cấp hàng hóa và giá thị trường kỳ trước thành công"));
         }
     }
 }
