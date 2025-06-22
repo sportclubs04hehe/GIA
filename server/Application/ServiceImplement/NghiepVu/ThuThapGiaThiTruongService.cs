@@ -1,4 +1,5 @@
-﻿using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
+﻿using Application.DTOs.NghiepVu.helpers;
+using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
 using Application.ServiceInterface.INghiepVu;
 using AutoMapper;
 using Core.Entities.Domain.DanhMuc;
@@ -134,5 +135,93 @@ namespace Application.ServiceImplement.NghiepVu
                 }
             }
         }
+
+        public async Task<ThuThapGiaThiTruongBulkCreateResponseDto> BulkCreateAsync(ThuThapGiaThiTruongBulkCreateDto bulkCreateDto)
+        {
+            var response = new ThuThapGiaThiTruongBulkCreateResponseDto();
+
+            try
+            {
+                // Lấy danh sách HangHoaId từ input
+                var hangHoaIds = bulkCreateDto.DanhSachGiaHangHoa.Select(x => x.HangHoaId).ToList();
+
+                // Kiểm tra sự tồn tại của các bản ghi
+                var existenceCheck = await _repository.CheckExistenceForBulkAsync(
+                    hangHoaIds, bulkCreateDto.NgayThuThap, bulkCreateDto.LoaiGiaId);
+
+                // Lấy giá kỳ trước cho tính toán
+                var previousPrices = await _repository.GetPreviousPricesAsync(
+                    hangHoaIds, bulkCreateDto.NgayThuThap, bulkCreateDto.LoaiGiaId);
+
+                var entitiesToCreate = new List<ThuThapGiaThiTruong>();
+
+                foreach (var giaHangHoa in bulkCreateDto.DanhSachGiaHangHoa)
+                {
+                    // Bỏ qua nếu đã tồn tại
+                    if (existenceCheck.TryGetValue(giaHangHoa.HangHoaId, out bool exists) && exists)
+                    {
+                        response.TotalSkipped++;
+                        response.Warnings.Add($"Hàng hóa ID {giaHangHoa.HangHoaId} đã có dữ liệu cho ngày {bulkCreateDto.NgayThuThap:dd/MM/yyyy}");
+                        continue;
+                    }
+
+                    // Bỏ qua nếu không có giá nào được nhập
+                    if (!giaHangHoa.GiaPhoBienKyBaoCao.HasValue && !giaHangHoa.GiaBinhQuanKyNay.HasValue)
+                    {
+                        response.TotalSkipped++;
+                        response.Warnings.Add($"Hàng hóa ID {giaHangHoa.HangHoaId} không có giá được nhập");
+                        continue;
+                    }
+
+                    // Tính toán giá kỳ trước và các chỉ số
+                    var giaBinhQuanKyTruoc = previousPrices.TryGetValue(giaHangHoa.HangHoaId, out var prevPrice) ? prevPrice : null;
+
+                    decimal? mucTangGiam = null;
+                    decimal? tyLeTangGiam = null;
+
+                    if (giaHangHoa.GiaBinhQuanKyNay.HasValue && giaBinhQuanKyTruoc.HasValue && giaBinhQuanKyTruoc > 0)
+                    {
+                        mucTangGiam = giaHangHoa.GiaBinhQuanKyNay.Value - giaBinhQuanKyTruoc.Value;
+                        tyLeTangGiam = (mucTangGiam / giaBinhQuanKyTruoc.Value) * 100;
+                    }
+
+                    var entity = new ThuThapGiaThiTruong
+                    {
+                        Id = Guid.NewGuid(),
+                        NgayThuThap = bulkCreateDto.NgayThuThap,
+                        HangHoaId = giaHangHoa.HangHoaId,
+                        LoaiGiaId = bulkCreateDto.LoaiGiaId,
+                        GiaPhoBienKyBaoCao = giaHangHoa.GiaPhoBienKyBaoCao,
+                        GiaBinhQuanKyNay = giaHangHoa.GiaBinhQuanKyNay,
+                        NguonThongTin = bulkCreateDto.NguonThongTin,
+                        GhiChu = giaHangHoa.GhiChu,
+                        GiaBinhQuanKyTruoc = giaBinhQuanKyTruoc,
+                        MucTangGiam = mucTangGiam,
+                        TyLeTangGiam = tyLeTangGiam,
+                        CreatedDate = DateTime.UtcNow,
+                        IsDelete = false
+                    };
+
+                    entitiesToCreate.Add(entity);
+                }
+
+                // Thực hiện bulk insert
+                if (entitiesToCreate.Any())
+                {
+                    var createdEntities = await _repository.BulkAddAsync(entitiesToCreate);
+                    response.TotalCreated = createdEntities.Count;
+
+                    // Map sang DTO để trả về
+                    response.CreatedItems = _mapper.Map<List<ThuThapGiaThiTruongDto>>(createdEntities);
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Errors.Add($"Lỗi khi thêm mới: {ex.Message}");
+            }
+
+            return response;
+        }
+
     }
 }

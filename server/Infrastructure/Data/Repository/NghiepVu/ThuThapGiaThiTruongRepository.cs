@@ -220,5 +220,35 @@ namespace Infrastructure.Data.Repository.NghiepVu
 
             return rootNodes;
         }
+
+        public async Task<bool> ExistsForDateAndPriceTypeAsync(Guid hangHoaId, DateTime ngayThuThap, Guid loaiGiaId)
+        {
+            return await _context.ThuThapGiaThiTruongs
+                .AnyAsync(x => !x.IsDelete &&
+                              x.HangHoaId == hangHoaId &&
+                              x.NgayThuThap.Date == ngayThuThap.Date &&
+                              x.LoaiGiaId == loaiGiaId);
+        }
+
+        public async Task<List<ThuThapGiaThiTruong>> BulkAddAsync(List<ThuThapGiaThiTruong> entities)
+        {
+            await _context.ThuThapGiaThiTruongs.AddRangeAsync(entities);
+            await _context.SaveChangesAsync();
+            return entities;
+        }
+
+        public async Task<Dictionary<Guid, bool>> CheckExistenceForBulkAsync(List<Guid> hangHoaIds, DateTime ngayThuThap, Guid loaiGiaId)
+        {
+            var existingRecords = await _context.ThuThapGiaThiTruongs
+                .Where(x => !x.IsDelete &&
+                           hangHoaIds.Contains(x.HangHoaId) &&
+                           x.NgayThuThap.Date == ngayThuThap.Date &&
+                           x.LoaiGiaId == loaiGiaId)
+                .Select(x => x.HangHoaId)
+                .ToListAsync();
+
+            return hangHoaIds.ToDictionary(id => id, id => existingRecords.Contains(id));
+        }
+
     }
 }

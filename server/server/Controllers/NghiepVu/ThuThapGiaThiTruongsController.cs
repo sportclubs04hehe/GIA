@@ -1,4 +1,5 @@
-﻿using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
+﻿using Application.DTOs.NghiepVu.helpers;
+using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
 using Application.ServiceInterface.INghiepVu;
 using Core.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -122,9 +123,9 @@ namespace server.Controllers.NghiepVu
         [HttpGet("hierarchical")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<ApiResponse<List<HangHoaGiaThiTruongDto>>>> GetHierarchicalDataWithPreviousPrices(
-    [FromQuery] Guid parentId,
-    [FromQuery] DateTime ngayThuThap,
-    [FromQuery] Guid loaiGiaId)
+            [FromQuery] Guid parentId,
+            [FromQuery] DateTime ngayThuThap,
+            [FromQuery] Guid loaiGiaId)
         {
             var result = await _service.GetHierarchicalDataWithPreviousPricesAsync(
                 parentId, ngayThuThap, loaiGiaId);
@@ -133,6 +134,35 @@ namespace server.Controllers.NghiepVu
                 result,
                 "Dữ liệu phân cấp hàng hóa",
                 "Lấy dữ liệu phân cấp hàng hóa và giá thị trường kỳ trước thành công"));
+        }
+
+        //thêm mới
+        [HttpPost("bulk")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResponse<ThuThapGiaThiTruongBulkCreateResponseDto>>> BulkCreate(
+         [FromBody] ThuThapGiaThiTruongBulkCreateDto bulkCreateDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponse<ThuThapGiaThiTruongBulkCreateResponseDto>.BadRequest(
+                    message: "Dữ liệu không hợp lệ",
+                    errors: ModelState));
+
+            if (!bulkCreateDto.DanhSachGiaHangHoa.Any())
+                return BadRequest(ApiResponse<ThuThapGiaThiTruongBulkCreateResponseDto>.BadRequest(
+                    message: "Danh sách giá hàng hóa không được để trống"));
+
+            var result = await _service.BulkCreateAsync(bulkCreateDto);
+
+            var message = $"Thêm mới thành công {result.TotalCreated} bản ghi";
+            if (result.TotalSkipped > 0)
+            {
+                message += $", bỏ qua {result.TotalSkipped} bản ghi";
+            }
+
+            return Ok(ApiResponse<ThuThapGiaThiTruongBulkCreateResponseDto>.Success(
+                result,
+                message));
         }
     }
 }

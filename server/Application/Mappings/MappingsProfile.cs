@@ -137,6 +137,16 @@ namespace Application.Mappings
                     opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayThuThap));
 
             CreateMap<ThuThapGiaThiTruongUpdateDto, ThuThapGiaThiTruong>();
+
+            CreateMap<ThuThapGiaThiTruongBulkCreateDto, ThuThapGiaThiTruong>()
+            .ForMember(dest => dest.NgayThuThap,
+                opt => opt.MapFrom<UtcDateTimeResolver, DateTime>(src => src.NgayThuThap))
+            .ForMember(dest => dest.HangHoaId, opt => opt.Ignore())
+            .ForMember(dest => dest.GiaPhoBienKyBaoCao, opt => opt.Ignore())
+            .ForMember(dest => dest.GiaBinhQuanKyNay, opt => opt.Ignore())
+            .ForMember(dest => dest.GhiChu, opt => opt.Ignore());
+
+            CreateMap<HangHoaGiaCreateDto, ThuThapGiaThiTruong>();
             #endregion
         }
     }

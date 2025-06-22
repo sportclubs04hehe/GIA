@@ -1,4 +1,5 @@
-﻿using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
+﻿using Application.DTOs.NghiepVu.helpers;
+using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
 using Core.Helpers;
 
 namespace Application.ServiceInterface.INghiepVu
@@ -26,5 +27,8 @@ namespace Application.ServiceInterface.INghiepVu
             Guid parentId,
             DateTime ngayThuThap,
             Guid loaiGiaId);
+
+        Task<ThuThapGiaThiTruongBulkCreateResponseDto> BulkCreateAsync(ThuThapGiaThiTruongBulkCreateDto bulkCreateDto);
+
     }
 }

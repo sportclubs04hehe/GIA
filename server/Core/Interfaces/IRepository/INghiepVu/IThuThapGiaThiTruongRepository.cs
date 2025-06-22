@@ -13,7 +13,9 @@ namespace Core.Interfaces.IRepository.INghiepVu
            Guid parentId,
            DateTime ngayThuThap,
            Guid loaiGiaId);
-        // Thêm method này
         Task<Dictionary<Guid, decimal?>> GetPreviousPricesAsync(List<Guid> hangHoaIds, DateTime ngayThuThap, Guid loaiGiaId);
+        Task<bool> ExistsForDateAndPriceTypeAsync(Guid hangHoaId, DateTime ngayThuThap, Guid loaiGiaId);
+        Task<List<ThuThapGiaThiTruong>> BulkAddAsync(List<ThuThapGiaThiTruong> entities);
+        Task<Dictionary<Guid, bool>> CheckExistenceForBulkAsync(List<Guid> hangHoaIds, DateTime ngayThuThap, Guid loaiGiaId);
     }
 }
