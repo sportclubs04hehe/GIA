@@ -1,5 +1,4 @@
 ﻿using Core.Entities.Domain.DanhMuc.Enum;
-using Core.Entities.Domain.NghiepVu;
 using Core.Entities.IdentityBase;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -18,9 +17,6 @@ namespace Core.Entities.Domain.DanhMuc
         // Phân loại: 0 = Nhóm, 1 = Hàng hóa
         public Loai LoaiMatHang { get; set; }
 
-        [NotMapped] 
-        public int Level { get; set; }
-
         // Quan hệ phân cấp
         public Guid? MatHangChaId { get; set; }
 
@@ -38,8 +34,5 @@ namespace Core.Entities.Domain.DanhMuc
         public Guid? ThuocTinhId { get; set; }
         [ForeignKey("ThuocTinhId")]
         public virtual Dm_ThuocTinh? ThuocTinh { get; set; }
-
-        // Thêm navigation property để tham chiếu ngược lại
-        public virtual ICollection<ThuThapGiaThiTruong> ThuThapGiaThiTruongs { get; set; } = new List<ThuThapGiaThiTruong>();
     }
 }

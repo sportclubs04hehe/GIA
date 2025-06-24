@@ -283,7 +283,14 @@ namespace server.Controllers.DanhMuc
             Guid parentId,
             [FromQuery] PaginationParams paginationParams)
         {
-            return await ExecutePagedAsync(() => _hhThiTruongService.GetChildrenByParentIdPagedAsync(parentId, paginationParams));
+            // Mặc định sắp xếp theo mã nếu không có chỉ định khác
+            if (string.IsNullOrEmpty(paginationParams.OrderBy))
+            {
+                paginationParams.OrderBy = "ma";
+            }
+
+            return await ExecutePagedAsync(() =>
+                _hhThiTruongService.GetChildrenByParentIdPagedAsync(parentId, paginationParams));
         }
 
         /// <summary>
@@ -323,34 +330,6 @@ namespace server.Controllers.DanhMuc
                 _logger.LogError(ex, "Error performing hierarchical search");
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi tìm kiếm"));
-            }
-        }
-
-        /// <summary>
-        /// Lấy đường dẫn đầy đủ từ gốc đến node bao gồm các node con cần thiết
-        /// </summary>
-        [HttpGet("full-path/{targetNodeId:guid}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<List<HHThiTruongTreeNodeDto>>> GetFullPathWithChildren(
-            Guid targetNodeId,
-            [FromQuery] Guid? newItemId = null)
-        {
-            try
-            {
-                var result = await _hhThiTruongService.GetFullPathWithChildrenAsync(targetNodeId, newItemId);
-                return Ok(result);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ApiResponse.NotFound(THONGBAO, ex.Message));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi lấy đường dẫn đầy đủ đến node có ID: {Id}", targetNodeId);
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy đường dẫn đầy đủ"));
             }
         }
 
@@ -502,35 +481,38 @@ namespace server.Controllers.DanhMuc
         }
 
         /// <summary>
-        /// Lấy cấu trúc cây mặt hàng thị trường theo ID cha
+        /// Lấy đường dẫn phân cấp đầy đủ cho một mặt hàng thị trường
         /// </summary>
-        [HttpGet("hierarchical/{parentId:guid}")]
-        [ProducesResponseType(typeof(ApiResponse<List<HHThiTruongTreeNodeDto>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<List<HHThiTruongTreeNodeDto>>>> GetHierarchicalDescendants(Guid parentId)
+        [HttpGet("hierarchical-path/{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<HHThiTruongDto>>>> GetHierarchicalPath(Guid id)
         {
             try
             {
-                var result = await _hhThiTruongService.GetHierarchicalDescendantsByParentIdAsync(parentId);
-
-                return Ok(ApiResponse<List<HHThiTruongTreeNodeDto>>.Success(
-                    data: result,
+                var path = await _hhThiTruongService.GetHierarchicalPathAsync(id);
+                
+                if (path == null || !path.Any())
+                {
+                    return NotFound(ApiResponse.NotFound(
+                        THONGBAO, 
+                        "Không tìm thấy mặt hàng hoặc đường dẫn phân cấp"
+                    ));
+                }
+                
+                return Ok(ApiResponse<List<HHThiTruongDto>>.Success(
+                    data: path,
                     title: THONGBAO,
-                    message: "Lấy cấu trúc cây mặt hàng thành công"
+                    message: "Lấy đường dẫn phân cấp thành công"
                 ));
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ApiResponse.NotFound(THONGBAO, ex.Message));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting hierarchical structure for parent ID: {ParentId}", parentId);
+                _logger.LogError(ex, "Error retrieving hierarchical path for item with ID: {Id}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy cấu trúc cây mặt hàng"));
+                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy đường dẫn phân cấp"));
             }
         }
-
     }
 }

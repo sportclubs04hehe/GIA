@@ -7,7 +7,9 @@ using Infrastructure.Data.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
+using System.Globalization;
 using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 
 namespace Infrastructure.Data.DanhMuc.Repository
 {
@@ -282,22 +284,132 @@ namespace Infrastructure.Data.DanhMuc.Repository
             return rootNodes;
         }
 
-        public async Task<PagedList<Dm_HangHoaThiTruong>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams)
+        public async Task<PagedList<Dm_HangHoaThiTruong>> GetChildrenByParentIdPagedAsync(
+            Guid parentId, PaginationParams paginationParams)
         {
             var query = _dbSet
                 .Where(x => !x.IsDelete && x.MatHangChaId == parentId)
                 .Include(x => x.DonViTinh)
                 .AsNoTracking();
 
-            // Áp dụng sắp xếp
-            query = string.IsNullOrEmpty(paginationParams.OrderBy)
-                ? query.OrderBy(x => x.Ten)
-                : query.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
+            // Trường hợp sắp xếp theo mã dạng số
+            if (string.IsNullOrEmpty(paginationParams.OrderBy) || paginationParams.OrderBy.ToLower() == "ma")
+            {
+                // Tải dữ liệu về bộ nhớ trước khi sắp xếp
+                var allItems = await query.ToListAsync();
 
-            return await PagedList<Dm_HangHoaThiTruong>.CreateAsync(
-                query,
-                paginationParams.PageIndex,
-                paginationParams.PageSize);
+                // Sắp xếp trên bộ nhớ sử dụng KeySelector trực tiếp
+                var comparer = new MixedCodeComparer();
+
+                var orderedItems = paginationParams.SortDescending
+                    ? allItems.OrderByDescending(x => x.Ma, comparer)
+                    : allItems.OrderBy(x => x.Ma, comparer);
+
+                // Tính toán số lượng phần tử để phân trang
+                int totalCount = allItems.Count;
+                var paginatedItems = orderedItems
+                    .Skip((paginationParams.PageIndex - 1) * paginationParams.PageSize)
+                    .Take(paginationParams.PageSize)
+                    .ToList();
+                    
+                // Sử dụng constructor trực tiếp 
+                return new PagedList<Dm_HangHoaThiTruong>(
+                    paginatedItems, 
+                    totalCount,
+                    paginationParams.PageIndex,
+                    paginationParams.PageSize);
+            }
+            else
+            {
+                // Sử dụng sắp xếp thông thường cho các trường khác
+                query = query.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
+                
+                // Sử dụng phân trang bình thường trên database
+                return await PagedList<Dm_HangHoaThiTruong>.CreateAsync(
+                    query,
+                    paginationParams.PageIndex,
+                    paginationParams.PageSize);
+            }
+        }
+
+        // Thêm một lớp so sánh mã số
+        private class NumericCode : IComparable<NumericCode>, IComparable
+        {
+            private readonly double[] _parts;
+
+            public NumericCode(string code)
+            {
+                if (string.IsNullOrEmpty(code))
+                {
+                    _parts = new double[] { 0 };
+                    return;
+                }
+                
+                // Tách chuỗi theo dấu chấm và các ký tự không phải số
+                _parts = System.Text.RegularExpressions.Regex.Split(code, @"\.|\D+")
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .Select(part => double.TryParse(part, out var num) ? num : 0)
+                    .ToArray();
+            }
+
+            public int CompareTo(NumericCode other)
+            {
+                if (other == null)
+                    return 1;
+
+                int minLength = Math.Min(_parts.Length, other._parts.Length);
+
+                // So sánh từng phần số
+                for (int i = 0; i < minLength; i++)
+                {
+                    int comparison = _parts[i].CompareTo(other._parts[i]);
+                    if (comparison != 0)
+                        return comparison;
+                }
+
+                // Nếu các phần đều bằng nhau, chuỗi ngắn hơn sẽ đứng trước
+                return _parts.Length.CompareTo(other._parts.Length);
+            }
+
+            public int CompareTo(object obj)
+            {
+                if (obj is NumericCode other)
+                    return CompareTo(other);
+                
+                throw new ArgumentException("Object must be of type NumericCode", nameof(obj));
+            }
+        }
+
+        private class MixedCodeComparer : IComparer<string>
+        {
+            private readonly StringComparer _viComparer = StringComparer.Create(new CultureInfo("vi-VN"), ignoreCase: false);
+
+            public int Compare(string x, string y)
+            {
+                var isXNumeric = IsNumericLike(x);
+                var isYNumeric = IsNumericLike(y);
+
+                // Nếu cả hai đều là dạng số thì dùng NumericCode
+                if (isXNumeric && isYNumeric)
+                {
+                    return new NumericCode(x).CompareTo(new NumericCode(y));
+                }
+
+                // Nếu một cái là số, một cái là chữ, thì số đứng trước
+                if (isXNumeric && !isYNumeric) return -1;
+                if (!isXNumeric && isYNumeric) return 1;
+
+                // Nếu cả hai là chữ thì dùng so sánh tiếng Việt
+                return _viComparer.Compare(x, y);
+            }
+
+            private bool IsNumericLike(string input)
+            {
+                if (string.IsNullOrWhiteSpace(input)) return false;
+
+                // Ví dụ: 1, 1.2, 1001.4.5
+                return Regex.IsMatch(input, @"^\d+(\.\d+)*$");
+            }
         }
 
         public async Task<List<(Dm_HangHoaThiTruong Category, bool HasChildren)>> GetAllCategoriesWithChildInfoAsync()
@@ -335,171 +447,6 @@ namespace Infrastructure.Data.DanhMuc.Repository
                 .FirstOrDefaultAsync();
         }
 
-        /// <summary>
-        /// Lấy đường dẫn từ gốc đến node theo ID
-        /// </summary>
-        public async Task<List<Guid>> GetPathToRootAsync(Guid nodeId)
-        {
-            var path = new List<Guid>();
-            var currentNodeId = nodeId;
-
-            // Cache lưu trữ các node đã truy vấn để tránh truy vấn trùng lặp
-            var nodeCache = new Dictionary<Guid, Guid?>();
-
-            // Lấy đường dẫn từ node hiện tại lên đến gốc
-            while (true)
-            {
-                // Kiểm tra trong cache trước khi truy vấn database
-                if (nodeCache.ContainsKey(currentNodeId))
-                {
-                    path.Add(currentNodeId);
-
-                    if (!nodeCache[currentNodeId].HasValue)
-                        break; // Đã đến node gốc
-
-                    currentNodeId = nodeCache[currentNodeId].Value;
-                }
-                else
-                {
-                    // Truy vấn chỉ lấy thông tin ID và parent ID để giảm tải dữ liệu
-                    var node = await _dbSet
-                        .AsNoTracking()
-                        .Where(x => x.Id == currentNodeId && !x.IsDelete)
-                        .Select(x => new { x.Id, x.MatHangChaId })
-                        .FirstOrDefaultAsync();
-
-                    if (node == null)
-                        break;
-
-                    // Lưu vào cache
-                    nodeCache[node.Id] = node.MatHangChaId;
-
-                    path.Add(node.Id);
-
-                    if (!node.MatHangChaId.HasValue)
-                        break; // Đã đến node gốc
-
-                    currentNodeId = node.MatHangChaId.Value;
-                }
-            }
-
-            // Đảo ngược để có thứ tự từ gốc đến node
-            path.Reverse();
-
-            return path;
-        }
-
-        /// <summary>
-        /// Lấy các node gốc với các node con cần thiết theo đường dẫn, bao gồm tất cả anh em của node mới
-        /// </summary>
-        public async Task<List<Dm_HangHoaThiTruong>> GetRootNodesWithRequiredChildrenAsync(List<Guid> pathIds, Guid? newItemId = null)
-        {
-            if (pathIds == null || !pathIds.Any())
-                return new List<Dm_HangHoaThiTruong>();
-
-            // Lấy id của node gốc
-            var rootId = pathIds.First();
-
-            // Tìm node gốc trong cây
-            var rootNodes = await _dbSet
-                .Where(x => x.Id == rootId && !x.IsDelete)
-                .Include(x => x.DonViTinh)
-                .ToListAsync();
-
-            if (!rootNodes.Any())
-                return new List<Dm_HangHoaThiTruong>();
-
-            // Xây dựng cây với chỉ các node cần thiết theo đường dẫn
-            var result = new List<Dm_HangHoaThiTruong>(rootNodes);
-
-            // Lưu trữ ID của node cha chứa node mới để sau này tải tất cả con của nó
-            Guid? parentIdOfNewItem = null;
-
-            // Duyệt qua từng cấp trong đường dẫn để xây dựng cây
-            for (int i = 0; i < pathIds.Count - 1; i++)
-            {
-                var currentId = pathIds[i];
-                var nextId = pathIds[i + 1];
-
-                // Tìm node hiện tại trong kết quả
-                var currentNode = FindNodeById(result, currentId);
-                if (currentNode == null)
-                    continue;
-
-                // Nếu đây là node cuối cùng trong đường dẫn, lưu lại ID để tải tất cả con
-                if (i == pathIds.Count - 2)
-                {
-                    parentIdOfNewItem = currentId;
-                }
-
-                // Tìm tất cả các node con trực tiếp của node hiện tại trong đường dẫn
-                var childNodes = await _dbSet
-                    .Where(x => x.MatHangChaId == currentId && !x.IsDelete && x.Id == nextId)
-                    .Include(x => x.DonViTinh)
-                    .ToListAsync();
-
-                // Đảm bảo chỉ thêm mới node chưa có
-                foreach (var child in childNodes)
-                {
-                    if (currentNode.MatHangCon == null)
-                        currentNode.MatHangCon = new List<Dm_HangHoaThiTruong>();
-
-                    if (!currentNode.MatHangCon.Any(x => x.Id == child.Id))
-                        currentNode.MatHangCon.Add(child);
-                }
-            }
-
-            // Lấy node cha cuối cùng trong đường dẫn
-            var lastId = pathIds.Last();
-            var lastNode = FindNodeById(result, lastId);
-
-            if (lastNode != null)
-            {
-                // Tải tất cả các node con của node cha cuối cùng
-                var childrenOfLastNode = await _dbSet
-                    .Where(x => x.MatHangChaId == lastId && !x.IsDelete)
-                    .Include(x => x.DonViTinh)
-                    .ToListAsync();
-
-                if (lastNode.MatHangCon == null)
-                    lastNode.MatHangCon = new List<Dm_HangHoaThiTruong>();
-
-                foreach (var child in childrenOfLastNode)
-                {
-                    if (!lastNode.MatHangCon.Any(x => x.Id == child.Id))
-                        lastNode.MatHangCon.Add(child);
-                }
-
-                // Đánh dấu node mới nếu có
-                if (newItemId.HasValue && lastNode.MatHangCon.Any(x => x.Id == newItemId))
-                {
-                    // Không cần làm gì thêm vì tất cả con đã được tải
-                    // Và controller sẽ tự động chọn newItemId
-                }
-            }
-
-            return result;
-        }
-
-        // Helper method to find a node in the tree by ID
-        private Dm_HangHoaThiTruong FindNodeById(List<Dm_HangHoaThiTruong> nodes, Guid id)
-        {
-            foreach (var node in nodes)
-            {
-                if (node.Id == id)
-                    return node;
-
-                if (node.MatHangCon != null && node.MatHangCon.Any())
-                {
-                    var found = FindNodeById(node.MatHangCon.ToList(), id);
-                    if (found != null)
-                        return found;
-                }
-            }
-
-            return null;
-        }
-
         // nhiều mã tồn tại trong cùng một nhóm
         public async Task<List<string>> GetExistingCodesInSameLevelAsync(List<string> codes, Guid? parentId)
         {
@@ -535,89 +482,39 @@ namespace Infrastructure.Data.DanhMuc.Repository
             return await query.AnyAsync();
         }
 
-        public async Task<List<Dm_HangHoaThiTruong>> GetHierarchicalDescendantsByParentIdAsync(Guid parentId)
+        public async Task<List<Dm_HangHoaThiTruong>> GetHierarchicalPathAsync(Guid itemId)
         {
-            // Check if parent exists first to avoid unnecessary processing
-            var parentExists = await _dbSet.AnyAsync(x => x.Id == parentId && !x.IsDelete);
-            if (!parentExists)
-                throw new KeyNotFoundException($"Không tìm thấy mặt hàng với ID {parentId}");
-
-            // Use recursive CTE to get all descendants
-            var entityType = _context.Model.FindEntityType(typeof(Dm_HangHoaThiTruong));
-            string tableName = entityType.GetTableName();
-
-            // Sửa đổi ORDER BY để sắp xếp Ma theo kiểu số
-            string sql = $@"
-WITH RECURSIVE TreeCTE AS (
-    SELECT * FROM ""{tableName}"" 
-    WHERE ""Id"" = @parentId AND ""IsDelete"" = false
-    
-    UNION ALL
-    
-    SELECT child.* FROM ""{tableName}"" child
-    INNER JOIN TreeCTE parent ON child.""MatHangChaId"" = parent.""Id""
-    WHERE child.""IsDelete"" = false
-)
-SELECT * FROM TreeCTE
-ORDER BY ""LoaiMatHang"", 
-CASE 
-    WHEN ""Ma"" ~ E'^\\d+$' THEN CAST(""Ma"" AS INTEGER) 
-    ELSE 999999 
-END";
-
-            var parameters = new NpgsqlParameter[] {
-        new NpgsqlParameter("@parentId", NpgsqlDbType.Uuid) { Value = parentId }
-    };
-
-            var results = await _dbSet
-                .FromSqlRaw(sql, parameters)
-                .Include(x => x.DonViTinh)
+            // Start with the target item
+            var targetItem = await _dbSet
                 .AsNoTracking()
-                .ToListAsync();
-
-            // Build tree structure efficiently
-            var nodeMap = results.ToDictionary(x => x.Id);
-            var rootNodes = new List<Dm_HangHoaThiTruong>();
-
-            // Find and add the root node
-            var root = results.FirstOrDefault(x => x.Id == parentId);
-            if (root != null)
+                .Include(x => x.DonViTinh)
+                .FirstOrDefaultAsync(x => x.Id == itemId && !x.IsDelete);
+            
+            if (targetItem == null)
+                return new List<Dm_HangHoaThiTruong>();
+            
+            // Build the path from child to parents
+            var path = new List<Dm_HangHoaThiTruong> { targetItem };
+            var currentId = targetItem.MatHangChaId;
+            
+            // Walk up the hierarchy until we reach the root
+            while (currentId.HasValue)
             {
-                root.MatHangCon = new List<Dm_HangHoaThiTruong>();
-                rootNodes.Add(root);
+                var parentItem = await _dbSet
+                    .AsNoTracking()
+                    .Include(x => x.DonViTinh)
+                    .FirstOrDefaultAsync(x => x.Id == currentId.Value && !x.IsDelete);
+                
+                if (parentItem == null)
+                    break;
+                    
+                path.Add(parentItem);
+                currentId = parentItem.MatHangChaId;
             }
-
-            // Group children by their parent ID for efficient processing with numeric sorting
-            var childrenByParent = results
-                .Where(x => x.Id != parentId && x.MatHangChaId.HasValue)
-                .GroupBy(x => x.MatHangChaId.Value)
-                .ToDictionary(g => g.Key, g => SortByNumericMa(g.ToList()));
-
-            // Build parent-child relationships
-            foreach (var parentNodeId in childrenByParent.Keys)
-            {
-                if (nodeMap.TryGetValue(parentNodeId, out var parentNode))
-                {
-                    parentNode.MatHangCon = childrenByParent[parentNodeId];
-                }
-            }
-
-            return rootNodes;
+            
+            // Reverse to get root->leaf order
+            path.Reverse();
+            return path;
         }
-
-        // Hàm hỗ trợ để sắp xếp theo mã số
-        private List<Dm_HangHoaThiTruong> SortByNumericMa(List<Dm_HangHoaThiTruong> items)
-        {
-            return items.OrderBy(x => {
-                // Kiểm tra nếu mã chỉ chứa số
-                if (int.TryParse(x.Ma, out int numericValue))
-                    return numericValue;
-
-                // Nếu không phải số, giữ nguyên thứ tự
-                return int.MaxValue;
-            }).ToList();
-        }
-
-
     }
 }

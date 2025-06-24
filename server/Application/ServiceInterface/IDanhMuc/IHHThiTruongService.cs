@@ -21,11 +21,10 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<List<HHThiTruongDto>> CreateManyAsync(CreateManyHHThiTruongDto createDto);
         Task<PagedList<HHThiTruongTreeNodeDto>> SearchHierarchicalAsync(string searchTerm, PaginationParams paginationParams);
         Task<PagedList<HHThiTruongTreeNodeDto>> GetChildrenByParentIdPagedAsync(Guid parentId, PaginationParams paginationParams);
-        Task<List<HHThiTruongTreeNodeDto>> GetFullPathWithChildrenAsync(Guid targetNodeId, Guid? newItemId = null);
         Task<(bool IsSuccess, List<HHThiTruongDto> ImportedItems, List<string> Errors)> ImportFromExcelAsync(
             HHThiTruongBatchImportDto importDto);
         Task<CodeValidationResult> ValidateCodeAsync(string ma, Guid? parentId = null, Guid? exceptId = null);
         Task<List<CodeValidationResult>> ValidateMultipleCodesAsync(List<string> codes, Guid? parentId = null);
-            Task<List<HHThiTruongTreeNodeDto>> GetHierarchicalDescendantsByParentIdAsync(Guid parentId);
+        Task<List<HHThiTruongDto>> GetHierarchicalPathAsync(Guid itemId);
     }
 }

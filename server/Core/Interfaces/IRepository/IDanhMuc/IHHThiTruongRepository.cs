@@ -20,10 +20,8 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         Task<List<Dm_HangHoaThiTruong>> GetRootItemsForSearchAsync(HashSet<Guid> parentIds, List<Guid> matchingItemIds);
         Task<List<(Dm_HangHoaThiTruong Category, bool HasChildren)>> GetAllCategoriesWithChildInfoAsync();
         Task<Dm_HangHoaThiTruong> GetByIdWithRelationsAsync(Guid id);
-        Task<List<Guid>> GetPathToRootAsync(Guid nodeId);
-        Task<List<Dm_HangHoaThiTruong>> GetRootNodesWithRequiredChildrenAsync(List<Guid> pathIds, Guid? newItemId = null);
         Task<List<string>> GetExistingCodesInSameLevelAsync(List<string> codes, Guid? parentId);
-        Task<List<Dm_HangHoaThiTruong>> GetHierarchicalDescendantsByParentIdAsync(Guid parentId);
+        Task<List<Dm_HangHoaThiTruong>> GetHierarchicalPathAsync(Guid itemId);
 
     }
 }
