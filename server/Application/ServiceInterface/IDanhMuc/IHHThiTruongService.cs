@@ -26,5 +26,6 @@ namespace Application.ServiceInterface.IDanhMuc
         Task<CodeValidationResult> ValidateCodeAsync(string ma, Guid? parentId = null, Guid? exceptId = null);
         Task<List<CodeValidationResult>> ValidateMultipleCodesAsync(List<string> codes, Guid? parentId = null);
         Task<List<HHThiTruongDto>> GetHierarchicalPathAsync(Guid itemId);
+        Task<List<HHThiTruongTreeNodeDto>> GetAllChildrenRecursiveAsync(Guid parentId);
     }
 }

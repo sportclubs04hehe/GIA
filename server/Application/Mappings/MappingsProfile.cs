@@ -2,9 +2,12 @@
 using Application.DTOs.DanhMuc.Dm_LoaiGia;
 using Application.DTOs.DanhMuc.Dm_ThuocTinhDto;
 using Application.DTOs.DanhMuc.DonViTinhDto;
+using Application.DTOs.NghiepVu.ThuThapGiaChiTiet;
+using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
 using Application.Resolver;
 using AutoMapper;
 using Core.Entities.Domain.DanhMuc;
+using Core.Entities.Domain.NghiepVu;
 
 namespace Application.Mappings
 {
@@ -115,6 +118,36 @@ namespace Application.Mappings
             CreateMap<LoaiGiaUpdateDto, Dm_LoaiGia>();
             #endregion
 
+            #region Thu Thập Giá Thị Trường
+            // Map entity to DTO
+            CreateMap<ThuThapGiaThiTruong, ThuThapGiaThiTruongDto>()
+                .ForMember(d => d.TenLoaiGia, o => o.MapFrom(s => s.LoaiGia.Ten))
+                .ForMember(d => d.TenNhomHangHoa, o => o.MapFrom(s => s.NhomHangHoa != null ? s.NhomHangHoa.Ten : null));
+
+            // Map create DTO to entity
+            CreateMap<ThuThapGiaThiTruongCreateDto, ThuThapGiaThiTruong>()
+                .ForMember(dest => dest.NgayNhap,
+                    opt => opt.MapFrom<NullableUtcDateTimeResolver, DateTime?>(src => src.NgayNhap));
+
+            // Map update DTO to entity
+            CreateMap<ThuThapGiaThiTruongUpdateDto, ThuThapGiaThiTruong>()
+                .ForMember(dest => dest.NgayNhap,
+                    opt => opt.MapFrom<NullableUtcDateTimeResolver, DateTime?>(src => src.NgayNhap));
+            #endregion
+
+            #region Thu Thập Giá Chi Tiết
+            // Map entity to DTO
+            CreateMap<ThuThapGiaChiTiet, ThuThapGiaChiTietDto>()
+                .ForMember(d => d.TenHangHoa, o => o.MapFrom(s => s.HangHoaThiTruong.Ten))
+                .ForMember(d => d.MaHangHoa, o => o.MapFrom(s => s.HangHoaThiTruong.Ma))
+                .ForMember(d => d.DonViTinh, o => o.MapFrom(s => s.HangHoaThiTruong.DonViTinh != null ? s.HangHoaThiTruong.DonViTinh.Ten : null));
+
+            // Map create DTO to entity
+            CreateMap<ThuThapGiaChiTietCreateDto, ThuThapGiaChiTiet>();
+
+            // Map update DTO to entity
+            CreateMap<ThuThapGiaChiTietUpdateDto, ThuThapGiaChiTiet>();
+            #endregion
         }
     }
 }

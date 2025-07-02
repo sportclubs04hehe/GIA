@@ -489,5 +489,42 @@ namespace Application.ServiceImplement.DanhMuc
             var path = await _repository.GetHierarchicalPathAsync(itemId);
             return _mapper.Map<List<HHThiTruongDto>>(path);
         }
+
+        public async Task<List<HHThiTruongTreeNodeDto>> GetAllChildrenRecursiveAsync(Guid parentId)
+        {
+            // Lấy tất cả các mặt hàng con (bao gồm lồng nhau) từ repository
+            var allChildren = await _repository.GetAllChildrenRecursiveAsync(parentId);
+
+            if (!allChildren.Any())
+                return new List<HHThiTruongTreeNodeDto>();
+
+            // Chuyển đổi danh sách phẳng thành cấu trúc cây
+            Dictionary<Guid, HHThiTruongTreeNodeDto> nodeDict = new();
+            List<HHThiTruongTreeNodeDto> rootNodes = new();
+
+            // Ánh xạ tất cả các node vào từ điển để truy cập nhanh
+            foreach (var item in allChildren)
+            {
+                var dto = _mapper.Map<HHThiTruongTreeNodeDto>(item);
+                nodeDict[item.Id] = dto;
+            }
+
+            // Xây dựng cấu trúc cây
+            foreach (var item in allChildren)
+            {
+                if (item.MatHangChaId == parentId)
+                {
+                    // Nếu parent là ID gốc được yêu cầu, đây là node gốc cấp 1
+                    rootNodes.Add(nodeDict[item.Id]);
+                }
+                else if (item.MatHangChaId.HasValue && nodeDict.ContainsKey(item.MatHangChaId.Value))
+                {
+                    // Nếu không, thêm vào node cha tương ứng
+                    nodeDict[item.MatHangChaId.Value].MatHangCon.Add(nodeDict[item.Id]);
+                }
+            }
+
+            return rootNodes;
+        }
     }
 }

@@ -24,10 +24,4 @@
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="DTOs\NghiepVu\" />
-    <Folder Include="ServiceImplement\NghiepVu\" />
-    <Folder Include="ServiceInterface\INghiepVu\" />
-  </ItemGroup>
-
 </Project>

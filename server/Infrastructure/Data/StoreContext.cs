@@ -1,4 +1,5 @@
 ﻿using Core.Entities.Domain.DanhMuc;
+using Core.Entities.Domain.NghiepVu;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data
@@ -17,6 +18,9 @@ namespace Infrastructure.Data
         public DbSet<Dm_ThuocTinh> ThuocTinhs { get; set; }
         public DbSet<Dm_LoaiGia> LoaiGias { get; set; }
 
+        // Nghiep Vu
+        public DbSet<ThuThapGiaThiTruong> ThuThapGiaThiTruongs { get; set; }
+        public DbSet<ThuThapGiaChiTiet> ThuThapGiaChiTiets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -73,6 +77,35 @@ namespace Infrastructure.Data
             
             modelBuilder.Entity<Dm_HangHoaThiTruong>()
                 .HasIndex(m => m.IsDelete);
+
+            // Cấu hình mới cho Thu thập giá
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasOne(t => t.LoaiGia)
+                .WithMany(l => l.ThuThapGiaThiTruongs)
+                .HasForeignKey(t => t.LoaiGiaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ThuThapGiaThiTruong>()
+                .HasOne(t => t.NhomHangHoa)
+                .WithMany()
+                .HasForeignKey(t => t.NhomHangHoaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ThuThapGiaChiTiet>()
+                .HasOne(c => c.ThuThapGiaThiTruong)
+                .WithMany(t => t.ChiTietGia)
+                .HasForeignKey(c => c.ThuThapGiaThiTruongId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ThuThapGiaChiTiet>()
+                .HasOne(c => c.HangHoaThiTruong)
+                .WithMany(h => h.ChiTietGia)
+                .HasForeignKey(c => c.HangHoaThiTruongId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ThuThapGiaChiTiet>()
+                .HasIndex(c => new { c.ThuThapGiaThiTruongId, c.HangHoaThiTruongId })
+                .IsUnique();
         }
     }
 }

@@ -131,5 +131,13 @@ namespace Infrastructure.Data.Generic
             var orderedQuery = query.OrderByDescending(x => x.CreatedDate);
             return await PagedList<T>.CreateAsync(orderedQuery, p.PageIndex, p.PageSize);
         }
+
+        public virtual async Task<List<T>> GetListAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await BaseQuery
+                .Where(predicate)
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }

@@ -24,5 +24,8 @@ namespace Core.Interfaces.IGeneric
         Task<PagedList<T>> SearchAsync(
             SearchParams searchParams,
             params Expression<Func<T, string>>[] searchFields);
+        
+        // Thêm phương thức mới để lấy danh sách theo điều kiện
+        Task<List<T>> GetListAsync(Expression<Func<T, bool>> predicate);
     }
 }

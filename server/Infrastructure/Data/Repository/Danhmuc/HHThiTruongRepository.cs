@@ -311,10 +311,10 @@ namespace Infrastructure.Data.DanhMuc.Repository
                     .Skip((paginationParams.PageIndex - 1) * paginationParams.PageSize)
                     .Take(paginationParams.PageSize)
                     .ToList();
-                    
+
                 // Sử dụng constructor trực tiếp 
                 return new PagedList<Dm_HangHoaThiTruong>(
-                    paginatedItems, 
+                    paginatedItems,
                     totalCount,
                     paginationParams.PageIndex,
                     paginationParams.PageSize);
@@ -323,7 +323,7 @@ namespace Infrastructure.Data.DanhMuc.Repository
             {
                 // Sử dụng sắp xếp thông thường cho các trường khác
                 query = query.OrderByProperty(paginationParams.OrderBy, paginationParams.SortDescending);
-                
+
                 // Sử dụng phân trang bình thường trên database
                 return await PagedList<Dm_HangHoaThiTruong>.CreateAsync(
                     query,
@@ -344,7 +344,7 @@ namespace Infrastructure.Data.DanhMuc.Repository
                     _parts = new double[] { 0 };
                     return;
                 }
-                
+
                 // Tách chuỗi theo dấu chấm và các ký tự không phải số
                 _parts = System.Text.RegularExpressions.Regex.Split(code, @"\.|\D+")
                     .Where(s => !string.IsNullOrEmpty(s))
@@ -375,7 +375,7 @@ namespace Infrastructure.Data.DanhMuc.Repository
             {
                 if (obj is NumericCode other)
                     return CompareTo(other);
-                
+
                 throw new ArgumentException("Object must be of type NumericCode", nameof(obj));
             }
         }
@@ -489,14 +489,14 @@ namespace Infrastructure.Data.DanhMuc.Repository
                 .AsNoTracking()
                 .Include(x => x.DonViTinh)
                 .FirstOrDefaultAsync(x => x.Id == itemId && !x.IsDelete);
-            
+
             if (targetItem == null)
                 return new List<Dm_HangHoaThiTruong>();
-            
+
             // Build the path from child to parents
             var path = new List<Dm_HangHoaThiTruong> { targetItem };
             var currentId = targetItem.MatHangChaId;
-            
+
             // Walk up the hierarchy until we reach the root
             while (currentId.HasValue)
             {
@@ -504,17 +504,43 @@ namespace Infrastructure.Data.DanhMuc.Repository
                     .AsNoTracking()
                     .Include(x => x.DonViTinh)
                     .FirstOrDefaultAsync(x => x.Id == currentId.Value && !x.IsDelete);
-                
+
                 if (parentItem == null)
                     break;
-                    
+
                 path.Add(parentItem);
                 currentId = parentItem.MatHangChaId;
             }
-            
+
             // Reverse to get root->leaf order
             path.Reverse();
             return path;
+        }
+
+        public async Task<List<Dm_HangHoaThiTruong>> GetAllChildrenRecursiveAsync(Guid parentId)
+        {
+            // Sử dụng common table expression (CTE) để lấy toàn bộ cây phân cấp
+            // trong một lần truy vấn SQL duy nhất, tránh N+1 query
+            var result = await _context.Dm_HangHoaThiTruongs
+                .FromSqlRaw(@"
+            WITH RECURSIVE RecursiveChildren AS (
+                -- Anchor member (starting point)
+                SELECT * FROM ""Dm_HangHoaThiTruong"" 
+                WHERE ""MatHangChaId"" = {0} AND ""IsDelete"" = false
+                
+                UNION ALL
+                
+                -- Recursive member (children of children)
+                SELECT c.* FROM ""Dm_HangHoaThiTruong"" c
+                INNER JOIN RecursiveChildren rc ON c.""MatHangChaId"" = rc.""Id""
+                WHERE c.""IsDelete"" = false
+            )
+            SELECT * FROM RecursiveChildren", parentId)
+                .Include(x => x.DonViTinh)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return result;
         }
     }
 }
