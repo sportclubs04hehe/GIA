@@ -232,7 +232,7 @@ namespace Infrastructure.Data.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ThuThapGiaThiTruongId = table.Column<Guid>(type: "uuid", nullable: false),
                     HangHoaThiTruongId = table.Column<Guid>(type: "uuid", nullable: false),
-                    GiaPhoBienKyBaoCao = table.Column<decimal>(type: "numeric", nullable: true),
+                    GiaPhoBienKyBaoCao = table.Column<string>(type: "text", nullable: true),
                     GiaBinhQuanKyTruoc = table.Column<decimal>(type: "numeric", nullable: true),
                     GiaBinhQuanKyNay = table.Column<decimal>(type: "numeric", nullable: true),
                     MucTangGiamGiaBinhQuan = table.Column<decimal>(type: "numeric", nullable: true),
@@ -281,7 +281,8 @@ namespace Infrastructure.Data.Migrations
                 name: "IX_Dm_HangHoaThiTruong_Ma_MatHangChaId",
                 table: "Dm_HangHoaThiTruong",
                 columns: new[] { "Ma", "MatHangChaId" },
-                unique: true);
+                unique: true,
+                filter: "\"IsDelete\" = false");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Dm_HangHoaThiTruong_MatHangChaId",

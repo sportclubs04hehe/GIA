@@ -4,7 +4,6 @@ using Application.DTOs.NghiepVu.ThuThapGiaChiTiet;
 using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
 using Application.ServiceInterface.INghiepVu;
 using AutoMapper;
-using Core.Entities.Domain.DanhMuc;
 using Core.Entities.Domain.NghiepVu;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
@@ -17,15 +16,19 @@ namespace Application.ServiceImplement.NghiepVu
     {
         private readonly IThuThapGiaThiTruongRepository _thuThapGiaRepository;
         private readonly IDm_LoaiGiaRepository _loaiGiaRepository;
+        private readonly IGiaDichVuRepository _giaDichVuRepository;
+
         private readonly IMapper _mapper;
 
         public ThuThapGiaThiTruongService(
             IThuThapGiaThiTruongRepository thuThapGiaRepository,
             IDm_LoaiGiaRepository loaiGiaRepository,
+            IGiaDichVuRepository giaDichVuRepository,
             IMapper mapper)
         {
             _thuThapGiaRepository = thuThapGiaRepository;
             _loaiGiaRepository = loaiGiaRepository;
+            _giaDichVuRepository = giaDichVuRepository;
             _mapper = mapper;
         }
 
@@ -107,6 +110,123 @@ namespace Application.ServiceImplement.NghiepVu
                 exprNam);
             
             return _mapper.Map<PagedList<ThuThapGiaThiTruongDto>>(pagedList);
+        }
+
+
+
+        public async Task<List<HHThiTruongTreeNodeDto>> GetAllChildrenRecursiveAsync(Guid parentId, DateTime? ngayNhap = null)
+        {
+            // Đảm bảo ngày nhập là UTC
+            DateTime? utcNgayNhap = ngayNhap.HasValue
+                ? DateTime.SpecifyKind(ngayNhap.Value, DateTimeKind.Utc)
+                : null;
+
+            // Sử dụng repository mới để lấy cả hàng hóa và giá kỳ trước trong một lần gọi
+            var (hangHoa, giaKyTruoc) = await _giaDichVuRepository.GetHangHoaVaGiaKyTruocAsync(parentId, utcNgayNhap);
+
+            if (!hangHoa.Any())
+                return new List<HHThiTruongTreeNodeDto>();
+
+            // Chuyển đổi danh sách phẳng thành cấu trúc cây
+            Dictionary<Guid, HHThiTruongTreeNodeDto> nodeDict = new();
+            List<HHThiTruongTreeNodeDto> rootNodes = new();
+
+            // Ánh xạ tất cả các node vào từ điển để truy cập nhanh
+            foreach (var item in hangHoa)
+            {
+                var dto = _mapper.Map<HHThiTruongTreeNodeDto>(item);
+
+                // Cập nhật giá kỳ trước nếu có
+                if (giaKyTruoc.ContainsKey(item.Id))
+                {
+                    dto.GiaBinhQuanKyTruoc = giaKyTruoc[item.Id];
+                }
+
+                nodeDict[item.Id] = dto;
+            }
+
+            // Xây dựng cấu trúc cây
+            foreach (var item in hangHoa)
+            {
+                if (item.MatHangChaId == parentId)
+                {
+                    // Nếu parent là ID gốc được yêu cầu, đây là node gốc cấp 1
+                    rootNodes.Add(nodeDict[item.Id]);
+                }
+                else if (item.MatHangChaId.HasValue && nodeDict.ContainsKey(item.MatHangChaId.Value))
+                {
+                    // Nếu không, thêm vào node cha tương ứng
+                    nodeDict[item.MatHangChaId.Value].MatHangCon.Add(nodeDict[item.Id]);
+                }
+            }
+
+            // Sắp xếp tất cả các cấp trong cây theo mã
+            SortTreeNodesByCode(rootNodes);
+
+            return rootNodes;
+        }
+
+        /// <summary>
+        /// Sắp xếp cấu trúc cây theo mã một cách đệ quy
+        /// </summary>
+        private void SortTreeNodesByCode(List<HHThiTruongTreeNodeDto> nodes)
+        {
+            if (nodes == null || nodes.Count == 0)
+                return;
+
+            // Luôn sắp xếp dù chỉ có 1 phần tử để đảm bảo thứ tự đúng khi thêm vào cây
+            nodes.Sort((a, b) => CompareNumericCodes(a.Ma, b.Ma));
+
+            // Sắp xếp đệ quy tất cả các con, kể cả khi chỉ có 1 con
+            foreach (var node in nodes)
+            {
+                if (node.MatHangCon != null)
+                {
+                    SortTreeNodesByCode(node.MatHangCon);
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// So sánh hai mã số có thể có nhiều định dạng khác nhau
+        /// </summary>
+        private int CompareNumericCodes(string x, string y)
+        {
+            if (string.IsNullOrEmpty(x) && string.IsNullOrEmpty(y)) return 0;
+            if (string.IsNullOrEmpty(x)) return -1;
+            if (string.IsNullOrEmpty(y)) return 1;
+
+            // Tách các phần của mã theo dấu chấm
+            string[] xParts = x.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            string[] yParts = y.Split('.', StringSplitOptions.RemoveEmptyEntries);
+
+            // So sánh từng phần
+            int minLength = Math.Min(xParts.Length, yParts.Length);
+            for (int i = 0; i < minLength; i++)
+            {
+                // Thử parse thành số để so sánh
+                bool xIsNumber = int.TryParse(xParts[i], out int xNum);
+                bool yIsNumber = int.TryParse(yParts[i], out int yNum);
+
+                if (xIsNumber && yIsNumber)
+                {
+                    // Cả hai đều là số, so sánh theo giá trị số
+                    int comparison = xNum.CompareTo(yNum);
+                    if (comparison != 0)
+                        return comparison;
+                }
+                else
+                {
+                    // Ít nhất một trong hai không phải số, so sánh như chuỗi
+                    int comparison = string.Compare(xParts[i], yParts[i], StringComparison.OrdinalIgnoreCase);
+                    if (comparison != 0)
+                        return comparison;
+                }
+            }
+
+            // Nếu tất cả các phần đều bằng nhau, mã có ít phần hơn sẽ đứng trước
+            return xParts.Length.CompareTo(yParts.Length);
         }
     }
 }

@@ -68,6 +68,7 @@ namespace server.Extensions
             #region Nghiệp vụ
             services.AddScoped<IThuThapGiaThiTruongRepository, ThuThapGiaThiTruongRepository>();
             services.AddScoped<IThuThapGiaChiTietRepository, ThuThapGiaChiTietRepository>();
+            services.AddScoped<IGiaDichVuRepository, GiaDichVuRepository>();
             #endregion
 
             #endregion

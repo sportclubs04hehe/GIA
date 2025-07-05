@@ -10,7 +10,7 @@ namespace Application.DTOs.NghiepVu.ThuThapGiaChiTiet
     {
         public Guid ThuThapGiaThiTruongId { get; set; }
         public Guid HangHoaThiTruongId { get; set; }
-        public decimal? GiaPhoBienKyBaoCao { get; set; }
+        public string? GiaPhoBienKyBaoCao { get; set; }
         public decimal? GiaBinhQuanKyTruoc { get; set; }
         public decimal? GiaBinhQuanKyNay { get; set; }
         public decimal? MucTangGiamGiaBinhQuan { get; set; }

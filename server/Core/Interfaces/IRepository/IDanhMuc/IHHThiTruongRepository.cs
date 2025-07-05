@@ -22,6 +22,5 @@ namespace Core.Interfaces.IRepository.IDanhMuc
         Task<Dm_HangHoaThiTruong> GetByIdWithRelationsAsync(Guid id);
         Task<List<string>> GetExistingCodesInSameLevelAsync(List<string> codes, Guid? parentId);
         Task<List<Dm_HangHoaThiTruong>> GetHierarchicalPathAsync(Guid itemId);
-        Task<List<Dm_HangHoaThiTruong>> GetAllChildrenRecursiveAsync(Guid parentId);
     }
 }

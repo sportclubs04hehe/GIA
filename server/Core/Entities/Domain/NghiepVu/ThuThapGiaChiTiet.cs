@@ -16,7 +16,7 @@ namespace Core.Entities.Domain.NghiepVu
         [ForeignKey("HangHoaThiTruongId")]
         public virtual Dm_HangHoaThiTruong HangHoaThiTruong { get; set; }
         
-        public decimal? GiaPhoBienKyBaoCao { get; set; }
+        public string? GiaPhoBienKyBaoCao { get; set; }
 
         // Giá bình quân kỳ trước
         public decimal? GiaBinhQuanKyTruoc { get; set; }

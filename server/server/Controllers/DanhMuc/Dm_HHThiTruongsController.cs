@@ -515,32 +515,5 @@ namespace server.Controllers.DanhMuc
             }
         }
 
-        /// <summary>
-        /// Lấy tất cả các mặt hàng con theo id cha (bao gồm cả lồng nhau)
-        /// </summary>
-        [HttpGet("recursive-children/{parentId:guid}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<List<HHThiTruongTreeNodeDto>>>> GetAllChildrenRecursive(Guid parentId)
-        {
-            try
-            {
-                var result = await _hhThiTruongService.GetAllChildrenRecursiveAsync(parentId);
-
-                return Ok(ApiResponse<List<HHThiTruongTreeNodeDto>>.Success(
-                    data: result,
-                    title: THONGBAO,
-                    message: "Lấy danh sách mặt hàng con thành công"
-                ));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving recursive children for parent ID: {ParentId}", parentId);
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    ApiResponse.ServerError(THONGBAO, "Có lỗi xảy ra khi lấy danh sách mặt hàng con"));
-            }
-        }
-
     }
 }

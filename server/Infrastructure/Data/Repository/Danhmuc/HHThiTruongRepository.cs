@@ -5,8 +5,6 @@ using Core.Interfaces.IRepository.IDanhMuc;
 using Infrastructure.Data.Generic;
 using Infrastructure.Data.Utilities;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using NpgsqlTypes;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
@@ -517,30 +515,5 @@ namespace Infrastructure.Data.DanhMuc.Repository
             return path;
         }
 
-        public async Task<List<Dm_HangHoaThiTruong>> GetAllChildrenRecursiveAsync(Guid parentId)
-        {
-            // Sử dụng common table expression (CTE) để lấy toàn bộ cây phân cấp
-            // trong một lần truy vấn SQL duy nhất, tránh N+1 query
-            var result = await _context.Dm_HangHoaThiTruongs
-                .FromSqlRaw(@"
-            WITH RECURSIVE RecursiveChildren AS (
-                -- Anchor member (starting point)
-                SELECT * FROM ""Dm_HangHoaThiTruong"" 
-                WHERE ""MatHangChaId"" = {0} AND ""IsDelete"" = false
-                
-                UNION ALL
-                
-                -- Recursive member (children of children)
-                SELECT c.* FROM ""Dm_HangHoaThiTruong"" c
-                INNER JOIN RecursiveChildren rc ON c.""MatHangChaId"" = rc.""Id""
-                WHERE c.""IsDelete"" = false
-            )
-            SELECT * FROM RecursiveChildren", parentId)
-                .Include(x => x.DonViTinh)
-                .AsNoTracking()
-                .ToListAsync();
-
-            return result;
-        }
     }
 }

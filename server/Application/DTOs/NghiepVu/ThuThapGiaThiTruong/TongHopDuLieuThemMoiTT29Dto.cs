@@ -1,9 +1,13 @@
-﻿using System;
+﻿using Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
+namespace Application.DTOs.NghiepVu.ThuThapGiaThiTruong
 {
-    public class HHThiTruongTreeNodeDto
+    public class TongHopDuLieuThemMoiTT29Dto
     {
         public Guid Id { get; set; }
         public string Ma { get; set; }
@@ -12,14 +16,13 @@ namespace Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto
         public string DacTinh { get; set; }
         public int LoaiMatHang { get; set; }
         public Guid? MatHangChaId { get; set; }
-        
-        // Thêm thuộc tính Level để xác định cấp độ thụt lề
         public int Level { get; set; }
-        
-        // Thêm thông tin đơn vị tính
         public Guid? DonViTinhId { get; set; }
         public string? TenDonViTinh { get; set; }
+
+        // Thêm trường giá kỳ trước
         public decimal? GiaBinhQuanKyTruoc { get; set; }
+
         public List<HHThiTruongTreeNodeDto> MatHangCon { get; set; } = new List<HHThiTruongTreeNodeDto>();
     }
 }

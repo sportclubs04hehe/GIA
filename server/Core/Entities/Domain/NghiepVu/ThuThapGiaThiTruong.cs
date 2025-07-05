@@ -1,8 +1,6 @@
 ﻿using Core.Entities.Domain.DanhMuc;
 using Core.Entities.Domain.DanhMuc.Enum;
 using Core.Entities.IdentityBase;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Core.Entities.Domain.NghiepVu

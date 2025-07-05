@@ -152,5 +152,40 @@ namespace server.Controllers.NghiepVu
         }
 
         #endregion
+
+        #region Danh mục hàng hóa thị trường
+
+        /// <summary>
+        /// Lấy tất cả các mặt hàng con theo id cha (bao gồm cả lồng nhau)
+        /// </summary>
+        [HttpGet("recursive-children/{parentId:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<HHThiTruongTreeNodeDto>>>> GetAllChildrenRecursive(
+            Guid parentId, 
+            [FromQuery] DateTime? ngayNhap = null)
+        {
+            try
+            {
+                DateTime? utcNgayNhap = ngayNhap.HasValue 
+                    ? DateTime.SpecifyKind(ngayNhap.Value, DateTimeKind.Utc) 
+                    : null;
+                    
+                var result = await _thuThapGiaThiTruongService.GetAllChildrenRecursiveAsync(parentId, utcNgayNhap);
+
+                return Ok(ApiResponse<List<HHThiTruongTreeNodeDto>>.Success(
+                    data: result,
+                    title: THONGBAO,
+                    message: "Lấy danh sách mặt hàng con thành công"
+                ));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, $"Có lỗi xảy ra khi lấy danh sách mặt hàng con: {ex.Message}"));
+            }
+        }
+        #endregion
     }
 }

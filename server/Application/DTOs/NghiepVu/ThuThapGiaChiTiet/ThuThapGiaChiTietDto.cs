@@ -7,7 +7,7 @@
         public string TenHangHoa { get; set; }
         public string MaHangHoa { get; set; }
         public string DonViTinh { get; set; }
-        public decimal? GiaPhoBienKyBaoCao { get; set; }
+        public string? GiaPhoBienKyBaoCao { get; set; }
         public decimal? GiaBinhQuanKyTruoc { get; set; }
         public decimal? GiaBinhQuanKyNay { get; set; }
         public decimal? MucTangGiamGiaBinhQuan { get; set; }

@@ -34,5 +34,7 @@ namespace Application.ServiceInterface.INghiepVu
         
         // Tìm kiếm phiếu thu thập giá
         Task<PagedList<ThuThapGiaThiTruongDto>> SearchAsync(SearchParams searchParams);
+        Task<List<HHThiTruongTreeNodeDto>> GetAllChildrenRecursiveAsync(Guid parentId, DateTime? ngayNhap = null);
+
     }
 }
