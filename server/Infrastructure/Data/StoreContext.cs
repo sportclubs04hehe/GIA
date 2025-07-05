@@ -67,7 +67,8 @@ namespace Infrastructure.Data
             // Chỉ mục
             modelBuilder.Entity<Dm_HangHoaThiTruong>()
                 .HasIndex(m => new { m.Ma, m.MatHangChaId })
-                .IsUnique();
+                .IsUnique()
+                .HasFilter("\"IsDelete\" = false"); 
 
             modelBuilder.Entity<Dm_HangHoaThiTruong>()
                 .HasIndex(m => m.LoaiMatHang);

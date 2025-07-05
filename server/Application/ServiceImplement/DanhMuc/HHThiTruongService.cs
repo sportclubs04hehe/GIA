@@ -6,6 +6,7 @@ using Core.Entities.Domain.DanhMuc.Enum;
 using Core.Helpers;
 using Core.Interfaces.IRepository.IDanhMuc;
 using Infrastructure.Data.DanhMuc.Repository;
+using System.Text.RegularExpressions;
 
 namespace Application.ServiceImplement.DanhMuc
 {
@@ -524,7 +525,70 @@ namespace Application.ServiceImplement.DanhMuc
                 }
             }
 
+            // Sắp xếp tất cả các cấp trong cây theo mã sử dụng MixedCodeComparer
+            SortTreeNodesByCode(rootNodes);
+
             return rootNodes;
+        }
+
+        /// <summary>
+        /// Sắp xếp cấu trúc cây theo mã một cách đệ quy
+        /// </summary>
+        private void SortTreeNodesByCode(List<HHThiTruongTreeNodeDto> nodes)
+        {
+            if (nodes == null || nodes.Count <= 1)
+                return;
+
+            // Sử dụng custom comparer để sắp xếp mã số
+            nodes.Sort((a, b) =>
+            {
+                return CompareNumericCodes(a.Ma, b.Ma);
+            });
+
+            // Sắp xếp đệ quy tất cả các con
+            foreach (var node in nodes)
+            {
+                if (node.MatHangCon?.Count > 1)
+                {
+                    SortTreeNodesByCode(node.MatHangCon);
+                }
+            }
+        }
+
+        /// <summary>
+        /// So sánh hai mã số có thể có nhiều định dạng khác nhau
+        /// </summary>
+        private int CompareNumericCodes(string x, string y)
+        {
+            if (string.IsNullOrEmpty(x) && string.IsNullOrEmpty(y)) return 0;
+            if (string.IsNullOrEmpty(x)) return -1;
+            if (string.IsNullOrEmpty(y)) return 1;
+
+            // Tách các phần của mã theo dấu chấm hoặc các ký tự không phải số
+            string[] xParts = Regex.Split(x, @"\.|\D+").Where(s => !string.IsNullOrEmpty(s)).ToArray();
+            string[] yParts = Regex.Split(y, @"\.|\D+").Where(s => !string.IsNullOrEmpty(s)).ToArray();
+
+            // So sánh từng phần số
+            int minLength = Math.Min(xParts.Length, yParts.Length);
+            for (int i = 0; i < minLength; i++)
+            {
+                if (int.TryParse(xParts[i], out int xNum) && int.TryParse(yParts[i], out int yNum))
+                {
+                    int comparison = xNum.CompareTo(yNum);
+                    if (comparison != 0)
+                        return comparison;
+                }
+                else
+                {
+                    // Nếu không thể parse thành số, so sánh như chuỗi
+                    int comparison = string.Compare(xParts[i], yParts[i], StringComparison.Ordinal);
+                    if (comparison != 0)
+                        return comparison;
+                }
+            }
+
+            // Nếu tất cả các phần đều bằng nhau, chuỗi ngắn hơn sẽ đứng trước
+            return xParts.Length.CompareTo(yParts.Length);
         }
     }
 }

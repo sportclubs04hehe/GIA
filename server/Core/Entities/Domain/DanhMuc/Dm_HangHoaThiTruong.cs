@@ -14,6 +14,8 @@ namespace Core.Entities.Domain.DanhMuc
         public string? GhiChu { get; set; }
         public DateTime NgayHieuLuc { get; set; }
         public DateTime NgayHetHieuLuc { get; set; }
+        [NotMapped]
+    public int Level { get; set; } = 0;
 
         // Phân loại: 0 = Nhóm, 1 = Hàng hóa
         public Loai LoaiMatHang { get; set; }
