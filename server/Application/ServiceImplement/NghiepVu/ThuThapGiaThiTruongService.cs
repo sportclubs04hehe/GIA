@@ -228,5 +228,72 @@ namespace Application.ServiceImplement.NghiepVu
             // Nếu tất cả các phần đều bằng nhau, mã có ít phần hơn sẽ đứng trước
             return xParts.Length.CompareTo(yParts.Length);
         }
+
+        // tìm kiếm giá thị trường theo mã hàng hóa hoặc tên hàng hóa trong table thêm mới và sửa
+        public async Task<List<HHThiTruongTreeNodeDto>> SearchMatHangAsync(Guid nhomHangHoaId, string searchTerm, int maxResults = 50)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 2)
+                return new List<HHThiTruongTreeNodeDto>();
+
+            // Gọi repository để lấy dữ liệu
+            var hangHoa = await _giaDichVuRepository.SearchMatHangAsync(nhomHangHoaId, searchTerm, maxResults);
+
+            if (!hangHoa.Any())
+                return new List<HHThiTruongTreeNodeDto>();
+
+            // Chuyển đổi kết quả sang DTO
+            var dtoList = hangHoa.Select(item => _mapper.Map<HHThiTruongTreeNodeDto>(item)).ToList();
+
+            // Xây dựng cấu trúc cây
+            var result = BuildTreeFromFlatList(dtoList, nhomHangHoaId);
+
+            return result;
+        }
+
+        // Phương thức mới để xây dựng cây từ danh sách phẳng
+        private List<HHThiTruongTreeNodeDto> BuildTreeFromFlatList(List<HHThiTruongTreeNodeDto> items, Guid rootId)
+        {
+            // Tạo dictionary để truy cập nhanh theo ID
+            var lookup = items.ToDictionary(x => x.Id);
+            
+            // Kết quả cuối cùng
+            var result = new List<HHThiTruongTreeNodeDto>();
+            
+            // Xây dựng cây
+            foreach (var item in items)
+            {
+                // Nếu là con trực tiếp của root
+                if (item.MatHangChaId == rootId)
+                {
+                    result.Add(item);
+                }
+                // Nếu có cha và cha nằm trong danh sách
+                else if (item.MatHangChaId.HasValue && lookup.ContainsKey(item.MatHangChaId.Value))
+                {
+                    var parent = lookup[item.MatHangChaId.Value];
+                    parent.MatHangCon.Add(item);
+                }
+                // Nếu không có cha trong danh sách nhưng không phải con trực tiếp của root
+                else if (item.MatHangChaId.HasValue)
+                {
+                    // Thêm vào kết quả cuối cùng
+                    result.Add(item);
+                }
+            }
+            
+            // Sắp xếp theo mã
+            result.Sort((a, b) => CompareNumericCodes(a.Ma, b.Ma));
+            
+            // Sắp xếp các con của mỗi nút
+            foreach (var item in items)
+            {
+                if (item.MatHangCon.Count > 0)
+                {
+                    item.MatHangCon.Sort((a, b) => CompareNumericCodes(a.Ma, b.Ma));
+                }
+            }
+            
+            return result;
+        }
     }
 }

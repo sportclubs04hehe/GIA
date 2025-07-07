@@ -1,6 +1,5 @@
 ﻿using Application.DTOs.DanhMuc.Dm_HangHoaThiTruongsDto;
 using Application.DTOs.DanhMuc.Dm_LoaiGia;
-using Application.DTOs.NghiepVu.ThuThapGiaChiTiet;
 using Application.DTOs.NghiepVu.ThuThapGiaThiTruong;
 using Application.ServiceInterface.INghiepVu;
 using Core.Helpers;
@@ -184,6 +183,44 @@ namespace server.Controllers.NghiepVu
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse.ServerError(THONGBAO, $"Có lỗi xảy ra khi lấy danh sách mặt hàng con: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Tìm kiếm mặt hàng theo nhóm hàng hóa
+        /// </summary>
+        [HttpGet("search-mat-hang/{nhomHangHoaId:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<HHThiTruongTreeNodeDto>>>> SearchMatHang(
+            Guid nhomHangHoaId,
+            [FromQuery] string q,
+            [FromQuery] int maxResults = 25)
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+            {
+                return Ok(ApiResponse<List<HHThiTruongTreeNodeDto>>.Success(
+                    data: new List<HHThiTruongTreeNodeDto>(),
+                    title: THONGBAO,
+                    message: "Vui lòng nhập ít nhất 2 ký tự để tìm kiếm"
+                ));
+            }
+
+            try
+            {
+                var result = await _thuThapGiaThiTruongService.SearchMatHangAsync(nhomHangHoaId, q, maxResults);
+
+                return Ok(ApiResponse<List<HHThiTruongTreeNodeDto>>.Success(
+                    data: result,
+                    title: THONGBAO,
+                    message: $"Tìm thấy {result.Count} mặt hàng phù hợp"
+                ));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse.ServerError(THONGBAO, $"Lỗi khi tìm kiếm mặt hàng: {ex.Message}"));
             }
         }
         #endregion
