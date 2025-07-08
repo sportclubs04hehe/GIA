@@ -196,6 +196,7 @@ namespace server.Controllers.NghiepVu
         public async Task<ActionResult<ApiResponse<List<HHThiTruongTreeNodeDto>>>> SearchMatHang(
             Guid nhomHangHoaId,
             [FromQuery] string q,
+            [FromQuery] DateTime? ngayNhap = null,
             [FromQuery] int maxResults = 25)
         {
             if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
@@ -209,7 +210,11 @@ namespace server.Controllers.NghiepVu
 
             try
             {
-                var result = await _thuThapGiaThiTruongService.SearchMatHangAsync(nhomHangHoaId, q, maxResults);
+                DateTime? utcNgayNhap = ngayNhap.HasValue 
+                    ? DateTime.SpecifyKind(ngayNhap.Value.Date, DateTimeKind.Utc) // Chỉ lấy phần Date
+                    : null;
+                    
+                var result = await _thuThapGiaThiTruongService.SearchMatHangAsync(nhomHangHoaId, q, utcNgayNhap, maxResults);
 
                 return Ok(ApiResponse<List<HHThiTruongTreeNodeDto>>.Success(
                     data: result,

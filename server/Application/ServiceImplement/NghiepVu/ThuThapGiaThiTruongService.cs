@@ -230,19 +230,48 @@ namespace Application.ServiceImplement.NghiepVu
         }
 
         // tìm kiếm giá thị trường theo mã hàng hóa hoặc tên hàng hóa trong table thêm mới và sửa
-        public async Task<List<HHThiTruongTreeNodeDto>> SearchMatHangAsync(Guid nhomHangHoaId, string searchTerm, int maxResults = 50)
+        public async Task<List<HHThiTruongTreeNodeDto>> SearchMatHangAsync(
+            Guid nhomHangHoaId, 
+            string searchTerm, 
+            DateTime? ngayNhap = null, 
+            int maxResults = 50)
         {
             if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 2)
                 return new List<HHThiTruongTreeNodeDto>();
 
-            // Gọi repository để lấy dữ liệu
+            // Đảm bảo ngày nhập là UTC
+            DateTime? utcNgayNhap = ngayNhap.HasValue
+                ? DateTime.SpecifyKind(ngayNhap.Value, DateTimeKind.Utc)
+                : null;
+
+            // Gọi repository để lấy dữ liệu hàng hóa
             var hangHoa = await _giaDichVuRepository.SearchMatHangAsync(nhomHangHoaId, searchTerm, maxResults);
 
             if (!hangHoa.Any())
                 return new List<HHThiTruongTreeNodeDto>();
 
-            // Chuyển đổi kết quả sang DTO
-            var dtoList = hangHoa.Select(item => _mapper.Map<HHThiTruongTreeNodeDto>(item)).ToList();
+            // Lấy giá kỳ trước nếu có ngày nhập
+            Dictionary<Guid, decimal> giaKyTruoc = new Dictionary<Guid, decimal>();
+            
+            if (utcNgayNhap.HasValue && hangHoa.Any())
+            {
+                // Lấy tất cả giá kỳ trước cho nhóm hàng hóa này
+                var (_, prices) = await _giaDichVuRepository.GetHangHoaVaGiaKyTruocAsync(nhomHangHoaId, utcNgayNhap);
+                giaKyTruoc = prices;
+            }
+
+            // Chuyển đổi kết quả sang DTO và áp dụng giá kỳ trước
+            var dtoList = hangHoa.Select(item => {
+                var dto = _mapper.Map<HHThiTruongTreeNodeDto>(item);
+                
+                // Cập nhật giá kỳ trước nếu có
+                if (giaKyTruoc.ContainsKey(item.Id))
+                {
+                    dto.GiaBinhQuanKyTruoc = giaKyTruoc[item.Id];
+                }
+                
+                return dto;
+            }).ToList();
 
             // Xây dựng cấu trúc cây
             var result = BuildTreeFromFlatList(dtoList, nhomHangHoaId);

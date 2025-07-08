@@ -36,7 +36,7 @@ namespace Infrastructure.Data.Repository.NghiepVu
                     join phieu in _context.ThuThapGiaThiTruongs
                         on gia.ThuThapGiaThiTruongId equals phieu.Id
                     where phieu.NhomHangHoaId == nhomHangHoaId
-                        && phieu.NgayNhap < utcNgayNhap
+        && phieu.NgayNhap.HasValue && phieu.NgayNhap.Value.Date < utcNgayNhap.Date
                         && !phieu.IsDelete
                         && !gia.IsDelete
                         && hangHoaIds.Contains(gia.HangHoaThiTruongId)
@@ -95,10 +95,10 @@ namespace Infrastructure.Data.Repository.NghiepVu
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
                 return new List<Dm_HangHoaThiTruong>();
-            
+
             searchTerm = searchTerm.Trim().ToLower();
             string searchPattern = "%" + searchTerm + "%";
-            
+
             // Bước 1: Tìm tất cả mặt hàng khớp với từ khóa
             var matchedItems = await _context.Dm_HangHoaThiTruongs
                 .FromSqlRaw(@"
@@ -122,17 +122,17 @@ namespace Infrastructure.Data.Repository.NghiepVu
                     nhomHangHoaId, searchPattern, maxResults)
                 .AsNoTracking()
                 .ToListAsync();
-    
+
             if (matchedItems.Count == 0)
                 return new List<Dm_HangHoaThiTruong>();
-            
+
             // Bước 2: Thu thập tất cả MatHangChaId từ các mặt hàng đã tìm thấy
             var parentIds = matchedItems
                 .Where(x => x.MatHangChaId.HasValue)
                 .Select(x => x.MatHangChaId.Value)
                 .Distinct()
                 .ToList();
-            
+
             // Bước 3: Lấy tất cả các nhóm cha
             var allParents = new List<Dm_HangHoaThiTruong>();
             foreach (var parentId in parentIds)
@@ -140,23 +140,23 @@ namespace Infrastructure.Data.Repository.NghiepVu
                 var parentChain = await GetParentChainAsync(parentId, nhomHangHoaId);
                 allParents.AddRange(parentChain);
             }
-            
+
             // Bước 4: Kết hợp kết quả và loại bỏ trùng lặp
             var result = matchedItems.Concat(allParents)
                 .GroupBy(x => x.Id)
                 .Select(g => g.First())
                 .ToList();
-            
+
             // Bước 5: Thêm thông tin đơn vị tính
             var donViTinhIds = result
                 .Where(x => x.DonViTinhId.HasValue)
                 .Select(x => x.DonViTinhId.Value)
                 .Distinct();
-            
+
             var donViTinhs = await _context.DonViTinhs
                 .Where(d => donViTinhIds.Contains(d.Id))
                 .ToDictionaryAsync(k => k.Id, v => v);
-            
+
             foreach (var item in result)
             {
                 if (item.DonViTinhId.HasValue && donViTinhs.ContainsKey(item.DonViTinhId.Value))
@@ -164,7 +164,7 @@ namespace Infrastructure.Data.Repository.NghiepVu
                     item.DonViTinh = donViTinhs[item.DonViTinhId.Value];
                 }
             }
-            
+
             return result;
         }
 
@@ -173,20 +173,20 @@ namespace Infrastructure.Data.Repository.NghiepVu
         {
             var result = new List<Dm_HangHoaThiTruong>();
             var currentId = startId;
-            
+
             while (currentId != stopId)
             {
                 var parent = await _context.Dm_HangHoaThiTruongs
                     .Where(x => x.Id == currentId && !x.IsDelete)
                     .FirstOrDefaultAsync();
-                
+
                 if (parent == null || !parent.MatHangChaId.HasValue)
                     break;
-                
+
                 result.Add(parent);
                 currentId = parent.MatHangChaId.Value;
             }
-            
+
             return result;
         }
     }
